@@ -1,0 +1,60 @@
+
+# 允许上传特定文件或文件夹
+!README.md
+
+!src/
+!public/
+!docs/
+!env.d.te
+!package.json
+!package-lock.json
+!tsconfig.json
+!tsconfig.app.json
+!tsconfig.node,json
+!vite.config.ts
+!API文档.md
+!pom.xml
+!mvnw
+!mvnw.cmd
+
+# 忽略 backkend测试文件 文件
+backend/src/test/
+# 忽略 node_modules 文件夹
+node_modules/
+store/node_modules/
+frontend/node_modules/
+backend/node_modules/
+# 忽略 .vscode 文件夹
+.vscode/
+
+# 忽略 target 文件夹
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+

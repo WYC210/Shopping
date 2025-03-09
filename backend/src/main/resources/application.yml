@@ -1,0 +1,49 @@
+spring:
+  application:
+    name: Shopping
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/store?allowPublicKeyRetrieval=true&useSSL=false
+    username: root
+    password: 123456
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password: wz123456
+      database: 0
+      timeout: 5000
+      client-type: jedis
+      jedis:
+        pool:
+          enabled: true
+          max-active: 8
+          max-wait: -1ms
+          max-idle: 8
+          min-idle: 0
+
+server:
+  port: 8088
+  address: 0.0.0.0 # 允许从所有网络接口访问
+
+# 安全配置
+app:
+  security:
+    allowed-origins:
+      - "http://localhost:3000"
+      - "http://localhost:8080"
+    cookie-domain: "localhost"
+    secure-cookie: false
+    same-site: "Lax"
+
+# MyBatis配置
+mybatis:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    map-underscore-to-camel-case: true
+  mapper-locations: classpath:mapper/*.xml
+
+jwt:
+  secret: 7zV2kLp9xRqYfE5tHwCnJ8sKmNbQ4jXrGvD3yAhUcF6W
+  accessTokenExpiration: 900 # 15分钟
+  refreshTokenExpiration: 604800 # 7天
