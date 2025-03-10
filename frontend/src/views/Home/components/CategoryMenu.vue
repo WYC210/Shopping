@@ -1,17 +1,39 @@
 <template>
   <section class="categories" :style="{ height: contentHeight }">
     <h2 class="category-title">商品分类</h2>
-    <el-menu v-loading="loading" class="category-menu">
-      <el-menu-item @click="goToProductList">查看全部商品</el-menu-item>
-      <el-menu-item 
-        v-for="category in categories" 
-        :key="category.id"
-        @click="handleCategoryClick(category)"
-        @mouseenter="handleMouseEnter(category)"
-        @mouseleave="handleMenuItemLeave"
-      >
-        <span class="category-name">{{ category.name }}</span>
+    <el-menu 
+      class="category-menu"
+      :collapse="false"
+      :unique-opened="true"
+      :default-active="activeIndex"
+      background-color="transparent"
+      text-color="#fff"
+      active-text-color="#24d0fe"
+    >
+      <el-menu-item index="all" @click="goToProductList">
+        <el-icon><Grid /></el-icon>
+        <span>全部商品</span>
       </el-menu-item>
+      
+      <el-sub-menu 
+        v-for="category in categories"
+        :key="category.categoryId"
+        :index="category.categoryId.toString()"
+      >
+        <template #title>
+          <el-icon><FolderOpened /></el-icon>
+          <span>{{ category.name }}</span>
+        </template>
+        
+        <el-menu-item
+          v-for="subCategory in category.children"
+          :key="subCategory.categoryId"
+          :index="subCategory.categoryId.toString()"
+          @click="handleSubCategoryClick(subCategory)"
+        >
+          {{ subCategory.name }}
+        </el-menu-item>
+      </el-sub-menu>
     </el-menu>
 
     <!-- 子分类菜单 -->
@@ -57,6 +79,7 @@ import {
 import { ProductService } from "@/api/modules/product";
 import { useRouter } from "vue-router";
 import { categoryService } from "@/api/modules/category"
+import { Grid, FolderOpened } from '@element-plus/icons-vue';
 
 interface Props {
   contentHeight: string | number;
@@ -75,7 +98,7 @@ const activeCategory = ref<Category | null>(null);
 const activeCollapse = ref<string[]>([]);
 const breakpoints = useBreakpoints({ mobile: 768 });
 const isMobileView = computed(() => breakpoints.smaller("mobile"));
-const activeIndex = ref("0");
+const activeIndex = ref('all');
 let hideTimer: ReturnType<typeof setTimeout> | null = null;
 
 // 本地状态
@@ -96,22 +119,14 @@ const fetchCategories = async () => {
 }
 
 // 处理分类点击
-const handleCategoryClick = (category: Category) => {
-  if (!category.children?.length) {  // 如果没有子分类，直接跳转
-    router.push({
-      path: '/products',
-      query: { category: category.categoryId.toString() }
-    });
-  }
-};
-
-// 处理子分类点击
-const handleSubCategoryClick = (subCategory: Category) => {
+const handleSubCategoryClick = (category: Category) => {
+  activeIndex.value = category.categoryId.toString();
   router.push({
     path: '/products',
-    query: { category: subCategory.categoryId.toString() }
-  })
-}
+    query: { category: category.categoryId.toString() }
+  });
+  emit('category-change', category);
+};
 
 // 鼠标进入分类
 const handleMouseEnter = (category: Category) => {
@@ -142,6 +157,7 @@ const clearHideTimer = () => {
 };
 
 const goToProductList = () => {
+  activeIndex.value = 'all';
   router.push({ name: 'ProductList' }); // 跳转到商品列表
 };
 

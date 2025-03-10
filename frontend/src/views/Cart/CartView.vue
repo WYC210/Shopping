@@ -10,7 +10,7 @@ import { useUserStore } from '@/types/store/user'
 import errorImage from '@/assets/cs.png'
 import HomeHeader from '@/views/Home/components/HomeHeader.vue'
 import { cartService } from '@/api/modules/cart'
-import { tokenManager } from '@/utils/auth'
+import { tokenManager } from '@/utils/tokenManager'
 
 // 定义类型
 interface CartItem {

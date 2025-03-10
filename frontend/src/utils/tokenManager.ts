@@ -1,5 +1,5 @@
-import { httpClient } from '@/utils/request';
 import router from '@/router';
+import { httpClient } from './request';
 
 export class TokenManager {
   private accessToken: string | null;
@@ -16,8 +16,6 @@ export class TokenManager {
       accessToken: this.accessToken ? '存在' : '不存在',
       refreshToken: this.refreshToken ? '存在' : '不存在'
     });
-
-
   }
 
   // 设置令牌
@@ -170,3 +168,7 @@ export class TokenManager {
 console.log('正在创建 tokenManager 实例...');
 export const tokenManager = new TokenManager();
 console.log('tokenManager 实例创建完成');
+
+// 初始化拦截器
+import { setupInterceptors } from './request';
+setupInterceptors(tokenManager);
