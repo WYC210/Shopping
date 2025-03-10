@@ -129,15 +129,30 @@ export class ProductService extends BaseApiService<Product> {
   }
 
   // 搜索商品
-  async searchProducts(keyword: string, options: Partial<PaginationParams> = {}): Promise<ProductResponse> {
-    return this.request<ProductResponse>({
-      url: this.baseUrl,
-      method: 'GET',
-      params: {
+  async searchProducts(keyword: string, page = 1, size = 10): Promise<ProductResponse> {
+    try {
+      console.log('发送搜索请求，参数:', {
         keyword,
-        ...options
-      }
-    });
+        page,
+        size
+      });
+      
+      const response = await this.request<ProductResponse>({
+        url: '/search', // 使用 /search 端点
+        method: 'GET',
+        params: {
+          keyword,
+          page,
+          size
+        }
+      });
+      
+      console.log('搜索响应数据:', response);
+      return response;
+    } catch (error) {
+      console.error('搜索商品失败:', error);
+      throw error;
+    }
   }
 
   // 获取推荐商品

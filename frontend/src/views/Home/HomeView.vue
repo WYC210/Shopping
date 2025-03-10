@@ -9,21 +9,16 @@
     <!-- 主体内容 -->
     <el-container class="main-container">
       <!-- 左侧分类菜单 -->
-      <el-aside width="250px" class="hidden-md-and-down">
+      <el-aside width="200px" class="category-aside hidden-md-and-down">
         <CategoryMenu :contentHeight="'calc(100vh - 80px)'" @category-change="handleCategoryChange" />
       </el-aside>
 
       <!-- 主要内容区域 -->
       <el-main>
-        <el-row :gutter="20">
-          <!-- 搜索栏 -->
-          <el-col :span="24" class="mb-4">
-            <SearchBar @search="handleSearch" />
-          </el-col>
-
+        <el-row :gutter="24">
           <!-- 轮播图 -->
-          <el-col :span="24" class="mb-4">
-            <HomeCarousel :contentHeight="'360px'" />
+          <el-col :span="24" class="mb-5">
+            <HomeCarousel :contentHeight="'400px'" />
           </el-col>
 
           <!-- 商品展示区域 -->
@@ -61,10 +56,6 @@ import HomeHeader from "./components/HomeHeader.vue";
 import CategoryMenu from "./components/CategoryMenu.vue";
 import HomeCarousel from "./components/HomeCarousel.vue";
 import ProductCard from "./components/ProductCard.vue";
-import SearchBar from "./components/SearchBar.vue";
-// import ProductList from "@/views/product/components/ProductList.vue";
-// import ProductSorter from "@/views/product/components/ProductSorter.vue";
-// import ProductFilter from "@/views/product/components/ProductFilter.vue";
 import type { Category, FilterParams, SortParams } from "@/types/store/HomeType";
 import { productService } from "@/api/modules/product";
 import type { Product } from "@/types/api/product";
@@ -95,10 +86,6 @@ const sortParams = reactive<SortParams>({
 });
 
 const router = useRouter();
-
-const handleSearch = (keyword: string) => {
-  filterParams.keyword = keyword;
-};
 
 const handleCategoryChange = (category: Category) => {
   filterParams.categoryId = category.id || null;

@@ -6,6 +6,52 @@
         <img src="@/assets/logo_w.png" alt="Logo" />
       </router-link>
 
+      <!-- 搜索框 -->
+      <div class="search-container" :class="{ 'is-expanded': isSearchExpanded }">
+        <el-input
+          v-model="searchKeyword"
+          placeholder="搜索商品..."
+          class="search-input"
+          :class="{ 'is-expanded': isSearchExpanded }"
+          @focus="isSearchExpanded = true"
+          @blur="handleSearchBlur"
+          @keyup.enter="handleSearch"
+          :loading="isSearching"
+        >
+          <template #prefix>
+            <el-icon><Search /></el-icon>
+          </template>
+        </el-input>
+        <!-- 搜索建议面板 -->
+        <div v-show="isSearchExpanded" class="search-suggestions">
+          <!-- 加载中状态 -->
+          <div v-if="isSearching" class="searching-status">
+            <el-icon class="is-loading"><Loading /></el-icon>
+            <span>正在搜索...</span>
+          </div>
+          
+          <!-- 无结果提示 -->
+          <div v-else-if="noResults" class="no-results">
+            <el-empty description="未找到相关商品" />
+          </div>
+          
+          <!-- 热门搜索 -->
+          <div v-else class="hot-searches">
+            <div class="suggestion-title">热门搜索</div>
+            <div class="hot-tags">
+              <el-tag
+                v-for="tag in hotSearches"
+                :key="tag"
+                size="small"
+                @click="handleHotSearch(tag)"
+              >
+                {{ tag }}
+              </el-tag>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- 导航菜单 -->
       <nav class="nav-menu">
         <router-link to="/" class="nav-item">首页</router-link>
@@ -15,9 +61,7 @@
         </router-link>
         <router-link to="/cart" class="nav-item">
           <el-badge :value="cartStore.totalCount" :hidden="!cartStore.totalCount">
-            <el-icon>
-              <ShoppingCart />
-            </el-icon>
+            <el-icon><ShoppingCart /></el-icon>
             购物车
           </el-badge>
         </router-link>
@@ -52,16 +96,20 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
-import { ShoppingCart } from "@element-plus/icons-vue";
+import { ShoppingCart, Search, Loading } from "@element-plus/icons-vue";
 import { useUserStore } from "@/types/store/user";
 import { useCartStore } from "@/types/store/cart";
 import { ElMessage } from 'element-plus';
 import defaultAvatar from '@/assets/cs.png';
+import { productService } from "@/api/modules/product";
+import type { Product } from "@/types/api/product";
 
 const router = useRouter();
 const userStore = useUserStore();
 const cartStore = useCartStore();
 const isScrolled = ref(false);
+const isSearchExpanded = ref(false);
+const searchKeyword = ref('');
 
 const props = defineProps({
   showManageButton: {
@@ -69,6 +117,59 @@ const props = defineProps({
     default: false
   }
 })
+
+// 热门搜索词
+const hotSearches = [
+  '新品上市',
+  '限时特惠',
+  '热销商品',
+  '品牌精选',
+  '今日推荐'
+];
+
+// 添加搜索结果状态
+const searchResults = ref<Product[]>([]);
+const isSearching = ref(false);
+const noResults = ref(false);
+
+const handleSearchBlur = () => {
+  // 延迟收起,让用户有时间点击搜索建议
+  setTimeout(() => {
+    if (!searchKeyword.value) {
+      isSearchExpanded.value = false;
+    }
+  }, 200);
+};
+
+const handleSearch = async () => {
+  if (!searchKeyword.value.trim()) {
+    return;
+  }
+
+  try {
+    isSearching.value = true;
+    
+    // 直接跳转到搜索结果页面
+    router.push({
+      path: '/search',
+      query: { 
+        keyword: searchKeyword.value.trim()
+      }
+    });
+    
+    isSearchExpanded.value = false;
+  } catch (error) {
+    console.error('搜索失败:', error);
+    ElMessage.error('搜索失败，请稍后重试');
+  } finally {
+    isSearching.value = false;
+  }
+};
+
+const handleHotSearch = (keyword: string) => {
+  searchKeyword.value = keyword;
+  handleSearch();
+};
 
 // 验证 token 是否有效
 const validateToken = async () => {
@@ -310,5 +411,121 @@ defineExpose({
 
 :deep(.el-dropdown-menu__item.is-disabled) {
   color: rgba(255, 255, 255, 0.4);
+}
+
+/* 添加搜索框相关样式 */
+.search-container {
+  position: relative;
+  width: 200px;
+  transition: all 0.3s ease;
+  margin: 0 20px;
+}
+
+.search-container.is-expanded {
+  width: 400px;
+}
+
+.search-input {
+  transition: all 0.3s ease;
+}
+
+.search-input :deep(.el-input__wrapper) {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  box-shadow: none;
+}
+
+.search-input :deep(.el-input__inner) {
+  color: var(--starlight);
+}
+
+.search-input :deep(.el-input__inner::placeholder) {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.search-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 8px;
+  background: rgba(6, 5, 36, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+}
+
+.suggestion-title {
+  color: var(--starlight);
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+.hot-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.hot-tags :deep(.el-tag) {
+  cursor: pointer;
+  background: rgba(250, 159, 252, 0.1);
+  border-color: rgba(250, 159, 252, 0.2);
+  color: var(--cosmic-blue);
+  transition: all 0.3s ease;
+}
+
+.hot-tags :deep(.el-tag:hover) {
+  background: rgba(250, 159, 252, 0.2);
+  transform: translateY(-2px);
+}
+
+/* 响应式调整 */
+@media screen and (max-width: 768px) {
+  .search-container {
+    width: 160px;
+  }
+  
+  .search-container.is-expanded {
+    width: 280px;
+  }
+}
+
+.searching-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  color: var(--starlight);
+  gap: 8px;
+}
+
+.no-results {
+  padding: 20px;
+  text-align: center;
+  color: var(--starlight);
+}
+
+:deep(.el-empty) {
+  padding: 20px;
+}
+
+:deep(.el-empty__description) {
+  color: var(--starlight);
+}
+
+.is-loading {
+  animation: rotating 2s linear infinite;
+}
+
+@keyframes rotating {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 </style>

@@ -23,4 +23,6 @@ public interface ProductService {
 
     // 下架商品（将 is_active 设为 0）
     void deactivateProduct(String productId);
+
+    PageResult<Product> searchProducts(String keyword, int page, int size);
 }

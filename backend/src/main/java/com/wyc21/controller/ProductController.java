@@ -121,4 +121,19 @@ public class ProductController extends BaseController {
         productService.deactivateProduct(productId);
         return ResponseEntity.ok("商品已下架");
     }
+
+    @GetMapping("/search")
+    public ResponseEntity<PageResult<Product>> searchProducts(
+            @RequestParam String keyword,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        try {
+            // URL 解码
+            String decodedKeyword = java.net.URLDecoder.decode(keyword, "UTF-8");
+            PageResult<Product> result = productService.searchProducts(decodedKeyword, page, size);
+            return ResponseEntity.ok(result);
+        } catch (java.io.UnsupportedEncodingException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
 }

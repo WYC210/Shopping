@@ -63,4 +63,10 @@ public interface ProductMapper {
          * @return 图片URL列表
          */
         List<String> findProductImages(@Param("productId") Long productId);
+
+        List<Product> searchProducts(@Param("keyword") String keyword, 
+                                   @Param("offset") int offset, 
+                                   @Param("size") int size);
+        
+        int countSearchProducts(@Param("keyword") String keyword);
 }

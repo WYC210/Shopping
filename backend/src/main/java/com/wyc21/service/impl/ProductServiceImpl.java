@@ -85,4 +85,19 @@ public class ProductServiceImpl implements ProductService {
         product.setIsActive(0);
         productMapper.updateProduct(product);
     }
+
+    @Override
+    public PageResult<Product> searchProducts(String keyword, int page, int size) {
+        // 计算分页偏移量
+        int offset = (page - 1) * size;
+        
+        // 获取匹配的商品列表
+        List<Product> products = productMapper.searchProducts(keyword, offset, size);
+        
+        // 获取总记录数
+        int total = productMapper.countSearchProducts(keyword);
+        
+        // 构建分页结果
+        return new PageResult<>(products, total, page, size);
+    }
 }

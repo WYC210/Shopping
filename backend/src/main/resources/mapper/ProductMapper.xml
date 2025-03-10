@@ -208,4 +208,29 @@
 <select id="findProductById" resultType="com.wyc21.entity.Product">
     SELECT * FROM wz_products WHERE product_id = #{productId}
 </select>
+
+<select id="searchProducts" resultType="com.wyc21.entity.Product">
+    SELECT *
+    FROM wz_products
+    WHERE is_active = 1
+    AND (
+        name LIKE CONCAT('%', #{keyword}, '%')
+        OR description LIKE CONCAT('%', #{keyword}, '%')
+        OR brand LIKE CONCAT('%', #{keyword}, '%')
+        OR tags LIKE CONCAT('%', #{keyword}, '%')
+    )
+    LIMIT #{offset}, #{size}
+</select>
+
+<select id="countSearchProducts" resultType="int">
+    SELECT COUNT(*)
+    FROM wz_products
+    WHERE is_active = 1
+    AND (
+        name LIKE CONCAT('%', #{keyword}, '%')
+        OR description LIKE CONCAT('%', #{keyword}, '%')
+        OR brand LIKE CONCAT('%', #{keyword}, '%')
+        OR tags LIKE CONCAT('%', #{keyword}, '%')
+    )
+</select>
 </mapper> 

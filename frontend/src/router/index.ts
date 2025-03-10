@@ -91,6 +91,14 @@ const router = createRouter({
         requiresAuth: true,
         requiresAdmin: true // 如果需要管理员权限
       }
+    },
+    {
+      path: '/search',
+      name: 'SearchResult',
+      component: () => import('@/views/Product/SearchResultView.vue'),
+      meta: {
+        title: '搜索结果'
+      }
     }
   ],
 })
