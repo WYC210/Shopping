@@ -12,6 +12,11 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.List;
@@ -25,6 +30,8 @@ import com.wyc21.service.ex.ProductNotFoundException;
 @RequestMapping("/products")
 public class ProductController extends BaseController {
 
+    private static final Logger log = LoggerFactory.getLogger(ProductController.class);
+
     @Autowired
     private ProductService productService;
 
@@ -33,6 +40,16 @@ public class ProductController extends BaseController {
 
     @Autowired
     private ResourceLoader resourceLoader; // 用于加载资源
+
+    @Autowired
+    private StringRedisTemplate redisTemplate;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    
+
+    private static final String BROWSE_HISTORY_KEY = "browse:history:";
 
     @GetMapping
     public PageResult<Product> getProducts(
@@ -46,9 +63,35 @@ public class ProductController extends BaseController {
     }
 
     @GetMapping("/{id}")
-    public JsonResult<Map<String, Object>> getProduct(@PathVariable Long id) {
+    public JsonResult<Map<String, Object>> getProduct(
+            @PathVariable Long id,
+            @RequestHeader(value = "X-Device-Fingerprint", required = false) String fingerprint) {
         // 获取商品基本信息
         Product product = productService.getProduct(String.valueOf(id));
+
+        // 记录浏览历史到Redis
+        if (fingerprint != null) {
+            String key = BROWSE_HISTORY_KEY + fingerprint;
+            double score = System.currentTimeMillis();
+            
+            // 存储商品信息到Redis
+            Map<String, String> productInfo = new HashMap<>();
+            productInfo.put("id", String.valueOf(id));
+            productInfo.put("name", product.getName());
+            productInfo.put("price", String.valueOf(product.getPrice()));
+            productInfo.put("imageUrl", product.getImageUrl());
+            productInfo.put("description", product.getDescription());
+            
+            // 将商品信息转换为JSON字符串
+            try {
+                String value = objectMapper.writeValueAsString(productInfo);
+                redisTemplate.opsForZSet().add(key, value, score);
+            } catch (JsonProcessingException e) {
+                log.error("存储商品信息到Redis失败: {}", e.getMessage());
+                // 可以选择返回一个错误响应
+            }
+        }
+
         // 获取商品所有图片
         List<String> images = productMapper.findProductImages(id);
 

@@ -1,5 +1,7 @@
 import router from '@/router';
 import { httpClient } from './request';
+import { fingerprintManager } from '@/utils/fingerprint';
+import type { AxiosRequestConfig, InternalAxiosRequestConfig } from 'axios';
 
 export class TokenManager {
   private accessToken: string | null;
@@ -101,7 +103,7 @@ export class TokenManager {
         return false;
       }
 
-      const response = await httpClient.post('/auth/refresh', {
+      const response = await httpClient.post('/users/refresh', {
         refreshToken: this.refreshToken
       });
 
@@ -168,7 +170,3 @@ export class TokenManager {
 console.log('正在创建 tokenManager 实例...');
 export const tokenManager = new TokenManager();
 console.log('tokenManager 实例创建完成');
-
-// 初始化拦截器
-import { setupInterceptors } from './request';
-setupInterceptors(tokenManager);

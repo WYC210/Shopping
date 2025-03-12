@@ -91,7 +91,7 @@ CREATE TABLE IF NOT EXISTS wz_browse_history (
     history_id VARCHAR(64) PRIMARY KEY,
     fingerprint_id VARCHAR(64),
     user_id VARCHAR(64),
-    product_id VARCHAR(64),
+    product_id VARCHAR(64) NOT NULL,
     browse_time DATETIME DEFAULT CURRENT_TIMESTAMP,
     created_user VARCHAR(50) NOT NULL DEFAULT 'system',
     FOREIGN KEY (fingerprint_id) REFERENCES wz_browser_fingerprints(fingerprint_id) ON DELETE CASCADE,

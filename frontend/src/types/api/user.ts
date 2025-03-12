@@ -6,6 +6,7 @@ export interface UserProfile {
   avatar?: string;
   phone?: string;
   createdAt: Date;
+  registeredAt?: string;
 }
 
 export interface LoginParams {

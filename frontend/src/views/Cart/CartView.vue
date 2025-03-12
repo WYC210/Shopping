@@ -4,7 +4,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Picture } from '@element-plus/icons-vue'
+import { Picture, ShoppingCart } from '@element-plus/icons-vue'
 import { useCartStore } from '@/types/store/cart'
 import { useUserStore } from '@/types/store/user'
 import errorImage from '@/assets/cs.png'
@@ -144,121 +144,185 @@ const handleImageError = (e: Event) => {
   const imgElement = e.target as HTMLImageElement;
   imgElement.src = errorImage;
 }
+
+const goBack = () => {
+  router.back();
+};
+
+const goToProductList = () => {
+  router.push('/productsList');
+};
+
+const clearCart = () => {
+  // 实现清空购物车的逻辑
+};
 </script>
 
 <template>
-  <div class="cart-container">
-    <HomeHeader ref="headerRef" />
-    <div class="page-header">
-      <h1 class="cyber-text">我的购物车</h1>
-    </div>
+  <div class="cart-page">
+    <HomeHeader />
+    
+    <div class="cart-container">
+      <!-- 页头 -->
+      <el-page-header class="page-header" @back="goBack">
+        <template #breadcrumb>
+          <el-breadcrumb separator="/">
+            <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
+            <el-breadcrumb-item>购物车</el-breadcrumb-item>
+          </el-breadcrumb>
+        </template>
+        
+        <template #title>
+          我的购物车
+        </template>
+        
+        <template #content>
+          共 {{ cartStore.totalCount }} 件商品
+        </template>
 
-    <div v-if="loading" class="loading-container">
-      <el-skeleton :rows="3" animated />
-    </div>
+        <template #icon>
+          <el-icon><ShoppingCart /></el-icon>
+        </template>
 
-    <div v-else-if="cartItems.length === 0" class="empty-cart">
-      <el-empty description="购物车是空的" />
-    </div>
+        <template #extra>
+          <el-button-group>
+            <el-button @click="clearCart" v-if="cartStore.totalCount > 0">
+              清空购物车
+            </el-button>
+            <el-button type="primary" @click="goToProductList">
+              继续购物
+            </el-button>
+          </el-button-group>
+        </template>
+      </el-page-header>
 
-    <div v-else class="cart-list">
-      <div class="cart-list-header">
-        <el-checkbox 
-          v-model="isAllSelected"
-          @change="handleSelectAll"
-        >
-          全选
-        </el-checkbox>
-        <span>商品信息</span>
-        <span>单价</span>
-        <span>数量</span>
-        <span>小计</span>
-        <span>操作</span>
+      <div v-if="loading" class="loading-container">
+        <el-skeleton :rows="3" animated />
       </div>
 
-      <div v-for="item in cartItems" :key="item.cartItemId" class="cart-item">
-        <el-checkbox v-model="item.selected" />
-        
-        <div class="product-info">
-          <img 
-            :src="item.imageUrl" 
-            :alt="item.productName" 
-            class="product-image"
-            @error="handleImageError"
-          />
-          <span class="product-name">{{ item.productName }}</span>
-        </div>
+      <div v-else-if="cartItems.length === 0" class="empty-cart">
+        <el-empty description="购物车是空的" />
+      </div>
 
-        <div class="product-price">
-          ¥{{ item.price }}
-        </div>
-
-        <div class="quantity-control">
-          <el-input-number 
-            v-model="item.quantity"
-            :min="1"
-            :max="99"
-            size="small"
-            @change="(val: number) => handleQuantityChange(item.cartItemId, val)"
-          />
-        </div>
-
-        <div class="subtotal">
-          ¥{{ item.price * item.quantity }}
-        </div>
-
-        <div class="operations">
-          <el-button 
-            type="danger" 
-            size="small"
-            @click="handleDelete(item.cartItemId)"
+      <div v-else class="cart-list">
+        <div class="cart-list-header">
+          <el-checkbox 
+            v-model="isAllSelected"
+            @change="handleSelectAll"
           >
-            删除
+            全选
+          </el-checkbox>
+          <span>商品信息</span>
+          <span>单价</span>
+          <span>数量</span>
+          <span>小计</span>
+          <span>操作</span>
+        </div>
+
+        <div v-for="item in cartItems" :key="item.cartItemId" class="cart-item">
+          <el-checkbox v-model="item.selected" />
+          
+          <div class="product-info">
+            <img 
+              :src="item.imageUrl" 
+              :alt="item.productName" 
+              class="product-image"
+              @error="handleImageError"
+            />
+            <span class="product-name">{{ item.productName }}</span>
+          </div>
+
+          <div class="product-price">
+            ¥{{ item.price }}
+          </div>
+
+          <div class="quantity-control">
+            <el-input-number 
+              v-model="item.quantity"
+              :min="1"
+              :max="99"
+              size="small"
+              @change="(val: number) => handleQuantityChange(item.cartItemId, val)"
+            />
+          </div>
+
+          <div class="subtotal">
+            ¥{{ item.price * item.quantity }}
+          </div>
+
+          <div class="operations">
+            <el-button 
+              type="danger" 
+              size="small"
+              @click="handleDelete(item.cartItemId)"
+            >
+              删除
+            </el-button>
+          </div>
+        </div>
+
+        <div class="cart-footer">
+          <div class="selected-info">
+            已选择 {{ selectedCount }} 件商品
+          </div>
+          <div class="total-price">
+            总计: ¥{{ totalPrice }}
+          </div>
+          <el-button 
+            type="primary" 
+            :loading="loading"
+            :disabled="selectedCount === 0"
+            @click="handleCheckout"
+          >
+            {{ loading ? '处理中...' : '结算' }}
           </el-button>
         </div>
-      </div>
-
-      <div class="cart-footer">
-        <div class="selected-info">
-          已选择 {{ selectedCount }} 件商品
-        </div>
-        <div class="total-price">
-          总计: ¥{{ totalPrice }}
-        </div>
-        <el-button 
-          type="primary" 
-          :loading="loading"
-          :disabled="selectedCount === 0"
-          @click="handleCheckout"
-        >
-          {{ loading ? '处理中...' : '结算' }}
-        </el-button>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
+.cart-page {
+  min-height: 100vh;
+  background: rgba(6, 5, 36, 0.95);
+}
+
+.cart-container {
+  padding-top: 80px;
+}
+
+/* 页头样式 */
+.page-header {
+  background: rgba(255, 255, 255, 0.02);
+  padding: 16px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 24px;
+}
+
+:deep(.el-page-header__left) {
+  color: var(--starlight);
+}
+
+:deep(.el-page-header__content),
+:deep(.el-page-header__title) {
+  color: var(--cosmic-blue);
+}
+
+:deep(.el-breadcrumb__inner) {
+  color: var(--starlight);
+}
+
+:deep(.el-breadcrumb__inner.is-link:hover) {
+  color: var(--cosmic-blue);
+}
+
 .cart-container {
   padding: 20px;
   padding-top: 100px; /* 为固定导航栏留出空间 */
   background: rgba(6, 5, 36, 0.95);
   border-radius: 15px;
   border: 1px solid rgba(250, 159, 252, 0.3);
-}
-
-.page-header {
-  display: flex;
-  align-items: center;
-  margin-bottom: 20px;
-  padding-bottom: 15px;
-  border-bottom: 1px solid rgba(250, 159, 252, 0.3);
-}
-
-.cyber-text {
-  color: var(--cosmic-blue);
-  font-size: 24px;
-  text-shadow: 0 0 10px rgba(36, 208, 254, 0.5);
 }
 
 .cart-list-header {

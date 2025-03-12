@@ -51,20 +51,22 @@ public class SecurityConfig {
                                                 // 允许匿名访问的路径
                                                 .requestMatchers(
                                                                 "/products/**",
-                                                                "/auth/login",
-                                                                "/auth/register",
+                                                                "/users/login",
+                                                                "/users/register",
                                                                 "/error",
                                                                 "/swagger-ui/**",
                                                                 "/v3/api-docs/**",
                                                                 "/categories/**",
-                                                                "/users/**")
+                                                                "/browse/history",
+                                                                "/users/")
                                                 .permitAll()
                                                 // 需要认证的路径
                                                 .requestMatchers(
                                                                 "/cart/**",
                                                                 "/orders/**",
-                                                                "/user/**",
-                                                                "/auth/refresh")
+                                                                "/users/info",
+                                                                "/users/refresh",
+                                                                                "/users/update","/users/password")
                                                 .authenticated()
                                                 .anyRequest().authenticated())
                                 // 添加 JWT 过滤器

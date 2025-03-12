@@ -70,8 +70,15 @@
       <!-- 用户区域 -->
       <div class="user-area">
         <template v-if="userStore.isLoggedIn">
-          <el-dropdown trigger="click" @command="handleCommand">
-            <div class="user-info">
+          <el-dropdown 
+            trigger="click" 
+            @command="handleCommand"
+          >
+            <div 
+              class="user-info"
+              @mouseenter="handleUserHover(true)"
+              @mouseleave="handleUserHover(false)"
+            >
               <el-avatar :size="32" :src="userStore.userInfo?.avatar || defaultAvatar" />
               <span class="username">{{ userStore.userInfo?.username || '用户' }}</span>
             </div>
@@ -94,7 +101,7 @@
   </header>
 </template>
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from "vue";
+import { ref, onMounted, onUnmounted, inject } from "vue";
 import { useRouter } from "vue-router";
 import { ShoppingCart, Search, Loading } from "@element-plus/icons-vue";
 import { useUserStore } from "@/types/store/user";
@@ -131,6 +138,9 @@ const hotSearches = [
 const searchResults = ref<Product[]>([]);
 const isSearching = ref(false);
 const noResults = ref(false);
+
+// 注入控制抽屉显示的方法
+const toggleDrawer = inject('toggleDrawer') as (show: boolean) => void;
 
 const handleSearchBlur = () => {
   // 延迟收起,让用户有时间点击搜索建议
@@ -234,6 +244,11 @@ const handleLogin = () => {
 
 const handleScroll = () => {
   isScrolled.value = window.scrollY > 0;
+};
+
+// 处理用户头像悬停
+const handleUserHover = (show: boolean) => {
+  toggleDrawer?.(show);
 };
 
 onMounted(() => {

@@ -1,183 +1,231 @@
 <template>
   <div class="order-page">
     <HomeHeader />
-    <div class="order-content">
-      <div class="page-header">
-        <h1>我的订单</h1>
-        <div class="order-stats">
-          <span>共 {{ orders.length }} 个订单</span>
-        </div>
-      </div>
+    
+    <div class="order-container">
+      <!-- 页头 -->
+      <el-page-header class="page-header" @back="goBack">
+        <template #breadcrumb>
+          <el-breadcrumb separator="/">
+            <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
+            <el-breadcrumb-item>我的订单</el-breadcrumb-item>
+          </el-breadcrumb>
+        </template>
+      </el-page-header>
 
-      <div class="order-tabs">
+      <!-- 订单列表 -->
+      <div class="order-content">
         <el-tabs v-model="activeTab" @tab-click="handleTabClick">
-          <el-tab-pane label="全部订单" name="all">
-            <OrderList 
-              :orders="filteredOrders"
-              :loading="loading"
-              @pay-order="handlePayOrder"
-              @cancel-order="handleCancelOrder"
-            />
-          </el-tab-pane>
-          <el-tab-pane label="待支付" name="unpaid">
-            <OrderList 
-              :orders="filteredOrders"
-              :loading="loading"
-              @pay-order="handlePayOrder"
-              @cancel-order="handleCancelOrder"
-            />
-          </el-tab-pane>
-          <el-tab-pane label="已支付" name="paid">
-            <OrderList 
-              :orders="filteredOrders"
-              :loading="loading"
-              @pay-order="handlePayOrder"
-              @cancel-order="handleCancelOrder"
-            />
-          </el-tab-pane>
+          <el-tab-pane label="全部订单" name="all" />
+          <el-tab-pane label="待支付" name="unpaid" />
+          <el-tab-pane label="已支付" name="paid" />
         </el-tabs>
+
+        <OrderList 
+          :orders="filteredOrders" 
+          :loading="loading"
+          @pay-order="handlePayOrder"
+          @cancel-order="handleCancelOrder"
+        />
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
-import { useOrderStore } from '@/types/store/order'
-import type { Order } from '@/types/store/order'
-import OrderList from './components/OrderList.vue'
-import HomeHeader from '@/views/Home/components/HomeHeader.vue'
+import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { ElMessage } from 'element-plus';
+import { orderService } from '@/api/modules/order';
+import type { Order } from '@/types/api/order';
+import OrderList from './components/OrderList.vue';
+import HomeHeader from '@/views/Home/components/HomeHeader.vue';
 
-type TabType = 'all' | 'unpaid' | 'paid'
+type TabType = 'all' | 'unpaid' | 'paid';
 
-const router = useRouter()
-const orderStore = useOrderStore()
-const activeTab = ref<TabType>('all')
-const loading = ref<boolean>(false)
+const router = useRouter();
+const loading = ref(false);
+const activeTab = ref<TabType>('all');
+const orders = ref<Order[]>([]);
 
 // 获取订单列表
 const fetchOrders = async () => {
-  loading.value = true
+  loading.value = true;
   try {
-    await orderStore.fetchOrderList() // 确保从后端获取订单数据
+    const response = await orderService.getOrderList();
+    console.log('获取到的订单列表:', response);
+    orders.value = response.data; // 确保从响应中获取数据
   } catch (error) {
-    ElMessage.error('获取订单列表失败')
+    console.error('获取订单列表失败:', error);
+    ElMessage.error('获取订单列表失败');
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
-// 计算属性：获取所有订单
-const orders = computed(() => orderStore.orderList)
-
-// 计算属性：根据选中的标签过滤订单
+// 根据标签过滤订单
 const filteredOrders = computed(() => {
   switch (activeTab.value) {
     case 'unpaid':
-      return orders.value.filter(order => order.status === 'PENDING_PAY')
+      return orders.value.filter(order => order.status === 'PENDING_PAY');
     case 'paid':
-      return orders.value.filter(order => order.status === 'PAID')
+      return orders.value.filter(order => order.status === 'PAID');
     default:
-      return orders.value
+      return orders.value;
   }
-})
+});
 
 // 处理支付订单
 const handlePayOrder = (orderId: string) => {
+  const order = orders.value.find(o => o.orderId === orderId);
+  if (!order) return;
+  
   router.push({
     path: '/payment',
-    query: { orderId }
-  })
-}
+    query: { 
+      orderId: orderId,
+      totalAmount: order.totalAmount
+    }
+  });
+};
 
 // 处理取消订单
 const handleCancelOrder = async (orderId: string) => {
   try {
-    await orderStore.cancelOrder(orderId)
-    ElMessage.success('订单已取消')
-    await fetchOrders()
+    await orderService.cancelOrder(orderId);
+    ElMessage.success('订单已取消');
+    await fetchOrders(); // 重新获取订单列表
   } catch (error) {
-    ElMessage.error('取消订单失败')
+    console.error('取消订单失败:', error);
+    ElMessage.error('取消订单失败');
   }
-}
+};
 
-// 处理标签点击事件
+// 处理标签切换
 const handleTabClick = () => {
-  fetchOrders()
-}
+  fetchOrders();
+};
 
-// 组件挂载时获取订单
+const goBack = () => {
+  router.back();
+};
+
+// 组件挂载时获取订单列表
 onMounted(() => {
-  fetchOrders()
-  console.log('所有订单:', orders.value)
-  console.log('过滤后的订单:', filteredOrders.value)
-})
+  fetchOrders();
+});
 </script>
 
 <style scoped>
 .order-page {
   min-height: 100vh;
-    background: rgba(6, 5, 36, 0.95);
+  background: rgba(6, 5, 36, 0.95);
+  padding-top: 80px;
+}
+
+.order-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
 }
 
 .order-content {
-  max-width: 1200px;
-  margin: 0 auto;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
   padding: 24px;
-  padding-top: 100px;
+  margin-top: 20px;
 }
 
-.page-header {
+.order-info-section,
+.order-items-section {
+  margin-bottom: 30px;
+}
+
+h3 {
+  color: #fff;
+  margin-bottom: 20px;
+  font-size: 18px;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.info-item {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.label {
+  color: rgba(255, 255, 255, 0.6);
+  margin-right: 8px;
+}
+
+.amount {
+  color: #07cfa1;
+  font-weight: bold;
+}
+
+.items-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.item-card {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-}
-
-.page-header h1 {
-  font-size: 24px;
-  color: #333;
-  margin: 0;
-}
-
-.order-stats {
-  color: #666;
-}
-
-.order-tabs {
-  background: rgba(59, 56, 142, 0.566);
+  gap: 16px;
+  background: rgba(255, 255, 255, 0.1);
   border-radius: 8px;
-  padding: 20px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 16px;
 }
 
-:deep(.el-tabs__nav-wrap::after) {
-  height: 1px;
-  background-color: #ebeef5;
+.item-image {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 4px;
 }
 
-:deep(.el-tabs__item) {
-  font-size: 16px;
-  color: #606266;
+.item-info {
+  flex: 1;
 }
 
-:deep(.el-tabs__item.is-active) {
-  color: #409EFF;
-  font-weight: 500;
+.item-info h4 {
+  color: #fff;
+  margin: 0 0 8px;
+}
+
+.price {
+  color: #07cfa1;
+  font-weight: bold;
+  margin: 8px 0;
+}
+
+.quantity {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.order-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 20px;
 }
 
 @media (max-width: 768px) {
-  .order-content {
+  .order-container {
     padding: 16px;
-    padding-top: 80px;
   }
 
-  .page-header {
+  .item-card {
     flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
+  }
+
+  .item-image {
+    width: 100%;
+    height: 200px;
   }
 }
 </style> 

@@ -12,7 +12,7 @@
           </span>
         </div>
 
-        <div class="products-list"> 
+        <div class="products-list">
           <div v-for="item in order.items" :key="item.productId" class="product-item">
             <div class="product-image">
               <el-image :src="item.imageUrl || defaultImage" fit="cover" />
@@ -38,7 +38,7 @@
             <el-button 
               v-if="order.status === 'PENDING_PAY'"
               type="primary" 
-              @click="handlePayOrder(order.orderId)"
+              @click="$emit('pay-order', order.orderId)"
             >
               立即支付
             </el-button>
@@ -60,7 +60,6 @@
 import { computed } from 'vue';
 import type { OrderStatus } from '@/types/api/payment';
 import defaultImage from '@/assets/cs2.png';
-import { useRouter } from 'vue-router';
 
 defineEmits(['pay-order', 'cancel-order']);
 
@@ -81,8 +80,6 @@ const props = defineProps<{
   loading?: boolean;
 }>();
 
-const router = useRouter()
-
 const getOrderStatusText = (status: OrderStatus) => {
   const statusMap = {
     'CREATED': '已创建',
@@ -100,19 +97,12 @@ const formatTime = (time: string) => {
 };
 
 const formatPrice = (price: number) => {
-  return Number(price).toFixed(2);
+  return (price / 100).toFixed(2);
 };
 
 const getTotalItems = (items: any[]) => {
   return items.reduce((sum, item) => sum + item.quantity, 0);
 };
-
-const handlePayOrder = (orderId: string) => {
-  router.push({
-    name: 'Payment',
-    query: { orderId }
-  })
-}
 </script>
 
 <style scoped>

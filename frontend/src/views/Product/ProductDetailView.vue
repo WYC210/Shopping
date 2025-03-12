@@ -3,7 +3,7 @@
 import { ref, computed, onMounted, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { ElMessage } from "element-plus"
-import { ShoppingCart, Picture } from "@element-plus/icons-vue"
+import { ShoppingCart, Picture, InfoFilled } from "@element-plus/icons-vue"
 import { productService } from "@/api/modules/product"
 import { orderService } from "@/api/modules/order"
 import { useUserStore } from "@/types/store/user"
@@ -17,6 +17,7 @@ import errorImage from '@/assets/cs.png'
 import HomeHeader from '@/views/Home/components/HomeHeader.vue'
 import type { OrderStatus } from '@/types/api/payment'
 import { cartService } from '@/api/modules/cart'
+import { getRandomQuote } from '@/constants/pageQuotes'
 
 // 定义接口
 interface ProductDetail extends Product {
@@ -103,8 +104,11 @@ const fetchProductDetail = async (): Promise<void> => {
 const handleAddToCart = async (): Promise<void> => {
   try {
     // 检查登录状态
-    const isLoggedIn = await headerRef.value?.checkLoginStatus();
-    if (!isLoggedIn) return;
+    if (!userStore.isLoggedIn) {
+      ElMessage.warning('请先登录');
+      router.push('/login');
+      return;
+    }
 
     if (!product.value?.stock) {
       ElMessage.warning('商品暂时无货');
@@ -133,12 +137,9 @@ const handleAddToCart = async (): Promise<void> => {
 const handlePurchase = async () => {
   try {
     // 检查登录状态
-    console.log('开始检查登录状态');
-    const isLoggedIn = await headerRef.value?.checkLoginStatus();
-    console.log('登录状态检查结果:', isLoggedIn);
-    
-    if (!isLoggedIn) {
+    if (!userStore.isLoggedIn) {
       ElMessage.warning('请先登录');
+      router.push('/login');
       return;
     }
 
@@ -148,9 +149,9 @@ const handlePurchase = async () => {
       return;
     }
 
-    // 构建订单项，确保所有必需字段都正确传递
+    // 构建订单项
     const orderItem = {
-      productId: productId, // 使用路由参数中的 productId
+      productId: productId,
       quantity: quantity.value,
       price: parseFloat(Number(product.value.price).toFixed(2)),
       productName: product.value.name
@@ -167,12 +168,15 @@ const handlePurchase = async () => {
     console.log('购买响应:', response);
 
     if (response.status === 200) {
-      ElMessage.success('购买成功');
-      // 跳转到订单详情页
+      ElMessage.success('订单创建成功');
+      // 跳转到支付页面
       const orderData = Array.isArray(response.data) ? response.data[0] : response.data;
       router.push({
-        path: '/order',
-        query: { orderId: orderData.orderId }
+        path: '/payment', // 修改为支付页面路径
+        query: { 
+          orderId: orderData.orderId,
+          totalAmount: orderData.totalAmount // 添加总金额参数
+        }
       });
     } else {
       throw new Error(response.message || '购买失败');
@@ -197,97 +201,124 @@ const goBack = (): void => {
 
 const headerRef = ref()
 
+const randomQuote = ref('')
+
 onMounted(() => {
   fetchProductDetail()
+  randomQuote.value = getRandomQuote('productDetail')
 })
 </script>
 
 <template>
-  <div class="product-detail-container">
-    <HomeHeader ref="headerRef" />
+  <div class="product-detail">
+    <HomeHeader />
     
-    <div v-if="product" class="product-detail">
-      <!-- 商品主要内容区域 -->
-      <div class="main-content">
-        <!-- 左侧图片展示 -->
-        <div class="left-section">
-          <el-image 
-            v-for="(image, index) in product.images" 
-            :key="index"
-            :src="image"
-            fit="cover"
-            class="product-image"
-            @error="handleImageError"
-          >
-            <template #error>
-              <div class="image-error">
-                <el-icon><Picture /></el-icon>
+    <div class="detail-container">
+      <!-- 页头 -->
+      <el-page-header class="page-header" @back="goBack">
+        <template #breadcrumb>
+          <el-breadcrumb separator="/">
+            <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
+            <el-breadcrumb-item>商品详情</el-breadcrumb-item>
+          </el-breadcrumb>
+        </template>
+        
+        <template #content>
+          <div class="flex items-center">
+            <el-icon class="mr-3"><InfoFilled /></el-icon>
+            <span class="text-large font-600 mr-3">商品详情</span>
+            <span class="text-sm mr-2" style="color: var(--el-text-color-regular)">
+              {{ randomQuote }}
+            </span>
+            <el-tag v-if="product?.stock > 0" type="success">有货</el-tag>
+            <el-tag v-else type="danger">无货</el-tag>
+          </div>
+        </template>
+      </el-page-header>
+
+      <div v-if="product" class="product-detail">
+        <!-- 商品主要内容区域 -->
+        <div class="main-content">
+          <!-- 左侧图片展示 -->
+          <div class="left-section">
+            <el-image 
+              v-for="(image, index) in product.images" 
+              :key="index"
+              :src="image"
+              fit="cover"
+              class="product-image"
+              @error="handleImageError"
+            >
+              <template #error>
+                <div class="image-error">
+                  <el-icon><Picture /></el-icon>
+                </div>
+              </template>
+            </el-image>
+          </div>
+
+          <!-- 右侧商品信息 -->
+          <div class="right-section">
+            <h1 class="product-title">{{ product.name }}</h1>
+            <p class="product-price">¥{{ product.price }}</p>
+            
+            <!-- 商品信息 -->
+            <div class="product-info">
+              <div class="info-item">
+                <span class="label">商品分类：</span>
+                <span class="value">{{ categoryName }}</span>
               </div>
-            </template>
-          </el-image>
-        </div>
+              <div class="info-item">
+                <span class="label">商品评分：</span>
+                <span class="value">{{ productRating }}分</span>
+              </div>
+              <div class="info-item">
+                <span class="label">库存状态：</span>
+                <span class="value" :class="{ 'out-of-stock': !product.stock }">
+                  {{ product.stock ? `有货 (${product.stock}件)` : '无货' }}
+                </span>
+              </div>
+            </div>
+            
+            <!-- SKU 选择 -->
+            <div class="sku-selector">
+              <label>数量：</label>
+              <el-input-number 
+                v-model="quantity"
+                :min="1"
+                :max="maxQuantity"
+                size="large"
+                
+              />
+            </div>
 
-        <!-- 右侧商品信息 -->
-        <div class="right-section">
-          <h1 class="product-title">{{ product.name }}</h1>
-          <p class="product-price">¥{{ product.price }}</p>
-          
-          <!-- 商品信息 -->
-          <div class="product-info">
-            <div class="info-item">
-              <span class="label">商品分类：</span>
-              <span class="value">{{ categoryName }}</span>
+            <!-- 操作按钮 -->
+            <div class="action-buttons">
+              <el-button 
+                type="primary" 
+                :disabled="!product?.stock"
+                @click="handlePurchase"
+              >
+                立即购买
+              </el-button>
+              <el-button 
+                class="add-to-cart-btn hologram-btn"
+                @click="handleAddToCart"
+                :disabled="!product.stock"
+              >
+                加入购物车
+              </el-button>
             </div>
-            <div class="info-item">
-              <span class="label">商品评分：</span>
-              <span class="value">{{ productRating }}分</span>
-            </div>
-            <div class="info-item">
-              <span class="label">库存状态：</span>
-              <span class="value" :class="{ 'out-of-stock': !product.stock }">
-                {{ product.stock ? `有货 (${product.stock}件)` : '无货' }}
-              </span>
-            </div>
-          </div>
-          
-          <!-- SKU 选择 -->
-          <div class="sku-selector">
-            <label>数量：</label>
-            <el-input-number 
-              v-model="quantity"
-              :min="1"
-              :max="maxQuantity"
-              size="large"
-              
-            />
-          </div>
-
-          <!-- 操作按钮 -->
-          <div class="action-buttons">
-            <el-button 
-              type="primary" 
-              :disabled="!product?.stock"
-              @click="handlePurchase"
-            >
-              立即购买
-            </el-button>
-            <el-button 
-              class="add-to-cart-btn hologram-btn"
-              @click="handleAddToCart"
-              :disabled="!product.stock"
-            >
-              加入购物车
-            </el-button>
           </div>
         </div>
-      </div>
 
-      <!-- 商品详情区域 -->
-      <div class="product-details">
-        <h2>商品详情</h2>
-        <div class="details-content">
-          <p>{{ product.description }}</p>
-          <!-- 可以添加更多详情内容 -->
+        <!-- 商品详情区域 -->
+        <div class="product-details">
+          <h2>商品详情</h2>
+          <div class="details-content">
+            <p>{{ product.description }}</p>
+            <!-- 可以添加更多详情内容 -->
+          </div>
         </div>
       </div>
     </div>
@@ -296,6 +327,39 @@ onMounted(() => {
 
 
 <style scoped>
+.product-detail {
+  min-height: 100vh;
+  background: rgba(6, 5, 36, 0.95);
+}
+
+.detail-container {
+  padding-top: 80px;
+}
+
+.page-header {
+  background: rgba(255, 255, 255, 0.02);
+  padding: 16px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 24px;
+}
+
+:deep(.el-page-header__left) {
+  color: var(--starlight);
+}
+
+:deep(.el-page-header__content),
+:deep(.el-page-header__title) {
+  color: var(--cosmic-blue);
+}
+
+:deep(.el-breadcrumb__inner) {
+  color: var(--starlight);
+}
+
+:deep(.el-breadcrumb__inner.is-link:hover) {
+  color: var(--cosmic-blue);
+}
+
 .product-detail-container {
   min-height: 100vh;
   background: rgba(6, 5, 36, 0.95);
@@ -504,5 +568,26 @@ onMounted(() => {
   background: rgba(255, 255, 255, 0.05);
   color: var(--text-secondary);
   font-size: 24px;
+}
+
+.quote-text {
+  font-size: 14px;
+  color: var(--starlight);
+  opacity: 0.8;
+  font-style: italic;
+  margin-top: 4px;
+}
+
+:deep(.el-page-header__content) {
+  display: flex;
+  justify-content: flex-end;
+  flex: 1;
+}
+
+.page-header-content {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  width: 100%;
 }
 </style>

@@ -1,21 +1,17 @@
 <template>
-  <v-app>
-    <v-main>
-      <router-view/>
-    </v-main>
-  </v-app>
+  <div class="app-container">
+    <router-view />
+    <FloatingAction />
+  </div>
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue'
-
-export default defineComponent({
-  name: 'App',
-
-  data () {
-    return {
-      //
-    }
-  },
-})
+<script setup lang="ts">
+import FloatingAction from '@/components/common/FloatingAction.vue'
 </script>
+
+<style>
+.app-container {
+  min-height: 100vh;
+  position: relative;
+}
+</style>

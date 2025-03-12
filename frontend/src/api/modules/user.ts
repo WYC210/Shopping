@@ -4,6 +4,7 @@ import { BaseApiService } from './base';
 import { validator } from '@/utils/validator'
 import type { UserProfile, LoginParams, UpdatePasswordParams } from '@/types/api/user.ts';
 import { tokenManager } from '@/utils/tokenManager';
+import axios from 'axios';
 
 /**
  * 用户服务类
@@ -129,6 +130,28 @@ export class UserService extends BaseApiService<UserProfile> {
       console.error('更新个人信息失败:', error);
       throw error;
     }
+  }
+
+  /**
+   * 获取用户浏览历史
+   */
+  async getBrowseHistory(page: number = 1, size: number = 20): Promise<any> {
+    const token = tokenManager.getAccessToken();
+    if (!token) {
+      throw new Error('未登录或 token 已失效');
+    }
+
+    return this.request({
+      method: 'GET',
+      url: '/browse/history',
+      params: {
+        page,
+        size
+      },
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
   }
 
 }

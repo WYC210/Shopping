@@ -13,16 +13,12 @@ import java.util.Arrays;
 import java.util.Properties;
 import java.io.FileInputStream;
 
-
 @Service
 @Slf4j
 public class DatabaseInitService {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
-
-
-
 
     private final String dbConfigPath = "src/main/resources/db/db_config.txt"; // 使用相对路径
 

@@ -137,7 +137,7 @@ import {
 } from "@element-plus/icons-vue";
 import { ChatDotRound } from "@element-plus/icons-vue";
 import type { FormInstance } from 'element-plus'
-// import { getCookie } from "@/utils/cookie";
+import { AuthService } from '@/api/modules/auth';
 
 const userStore = useUserStore();
 const router = useRouter();
@@ -166,50 +166,24 @@ const rules = {
 
 const handleLogin = async () => {
   if (!loginFormRef.value) return;
-
+  
   try {
     await loginFormRef.value.validate();
     loading.value = true;
 
-    // 发送登录请求
-    const response = await fetch('http://localhost:8088/users/login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        username: formData.value.username,
-        password: formData.value.password
-      })
+    await userStore.login({
+      username: formData.value.username,
+      password: formData.value.password
     });
 
-    const data = await response.json();
+    ElMessage.success('登录成功');
     
-    if (response.ok) {
-      // 保存 tokens 和用户信息
-      localStorage.setItem('accessToken', data.data.accessToken);
-      localStorage.setItem('refreshToken', data.data.refreshToken);
-      
-      // 更新 store 中的用户状态
-      await userStore.setTokens({
-        accessToken: data.data.accessToken,
-        refreshToken: data.data.refreshToken
-      });
-      
-      // 设置用户信息
-      userStore.setUserInfo(data.data.userInfo);
-      
-      ElMessage.success('登录成功');
-      
-      // 重定向
-      const redirect = route.query.redirect || "/";
-      router.push(typeof redirect === 'string' ? redirect : '/');
-    } else {
-      throw new Error(data.message || "登录失败");
-    }
+    // 获取重定向地址
+    const redirect = route.query.redirect as string || '/';
+    router.push(redirect);
   } catch (error: any) {
-    console.error("登录错误:", error);
-    ElMessage.error(error.message || "登录失败");
+    console.error('登录失败:', error);
+    ElMessage.error(error.message || '登录失败，请检查用户名和密码');
   } finally {
     loading.value = false;
   }

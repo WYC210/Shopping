@@ -50,30 +50,20 @@ export const useUserStore = defineStore('user', {
       }
     },
 
+    setLoggedIn(status: boolean) {
+      this.isLoggedIn = status;
+    },
+
     async login(credentials: LoginCredentials) {
       try {
         console.log('Attempting login with credentials:', credentials);
         const response = await httpClient.post('/users/login', credentials);
-        console.log('Login response:', response);  // 添加日志
         
-        if (response.status === 200) {
-          // 检查响应数据结构
-          console.log('Login response data:', response.data);
-          
-          // 解构前检查数据是否存在
-          if (!response.data || !response.data.accessToken || !response.data.refreshToken) {
-            console.error('Invalid response data structure:', response.data);
-            throw new Error('登录响应数据格式错误');
-          }
-
-          const { accessToken, refreshToken, userInfo } = response.data;
-          
-          // 检查 token 值
-          console.log('Tokens received:', { accessToken, refreshToken });
+        if (response.data?.status === 200) {
+          const { accessToken, refreshToken, userInfo } = response.data.data;
           
           // 保存 token
           const tokenSet = tokenManager.setTokens(accessToken, refreshToken);
-          console.log('tokenSet:' , tokenSet);
           
           if (!tokenSet) {
             throw new Error('保存令牌失败');
@@ -81,25 +71,25 @@ export const useUserStore = defineStore('user', {
           
           // 更新用户状态
           this.isLoggedIn = true;
+          this.accessToken = accessToken;
+          this.refreshToken = refreshToken;
           this.setUserInfo(userInfo);
           
-          console.log('Login successful, tokens set');
-          return response;
+          console.log('Login successful');
+          return response.data;
         }
         
         throw new Error(response.data?.message || '登录失败');
       } catch (error: any) {
-        console.error('登录失败，详细错误:', error);
-        throw error;
+        console.error('登录失败:', error);
+        throw new Error(error.message || '登录失败，请检查用户名和密码');
       }
     },
 
     async logout() {
       try {
         if (this.accessToken) {
-          // 调用登出接口
-          await fetch('http://localhost:8088/users/logout', {
-            method: 'POST',
+          await httpClient.post('/users/logout', null, {
             headers: {
               'Authorization': `Bearer ${this.accessToken}`
             }
@@ -108,8 +98,8 @@ export const useUserStore = defineStore('user', {
       } catch (error) {
         console.error('登出失败:', error);
       } finally {
-        // 确保清除所有状态
-        this.isLoggedIn = false;  // 确保设置登录状态为 false
+        // 清除所有状态
+        this.isLoggedIn = false;
         this.accessToken = null;
         this.refreshToken = null;
         this.userInfo = null;
@@ -118,6 +108,9 @@ export const useUserStore = defineStore('user', {
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('userInfo');
+        
+        // 清除 TokenManager 中的 tokens
+        tokenManager.clearTokens();
       }
     },
 
@@ -185,5 +178,15 @@ export const useUserStore = defineStore('user', {
         return false;
       }
     },
+
+    clearUserInfo() {
+      this.userInfo = null;
+      this.isLoggedIn = false;
+    },
+  },
+
+  getters: {
+    getUserInfo: (state) => state.userInfo,
+    getIsLoggedIn: (state) => state.isLoggedIn
   }
 });

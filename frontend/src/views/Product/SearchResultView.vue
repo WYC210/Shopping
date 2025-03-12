@@ -1,18 +1,21 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { productService } from '@/api/modules/product';
 import type { Product } from '@/types/api/product';
 import ProductCard from '@/views/Home/components/ProductCard.vue';
 import HomeHeader from '@/views/Home/components/HomeHeader.vue';
 import { Search } from '@element-plus/icons-vue';
+import { getRandomQuote } from '@/constants/pageQuotes';
 
 const route = useRoute();
+const router = useRouter();
 const products = ref<Product[]>([]);
 const loading = ref(false);
 const sortType = ref('default');
 const priceRange = ref([0, 10000]);
 const selectedRatings = ref<number[]>([]);
+const randomQuote = ref(getRandomQuote('product'));
 
 const ratingColors = ['#ff9900', '#ff9900', '#ff9900'];
 
@@ -70,6 +73,10 @@ watch(
   },
   { immediate: true }
 );
+
+const goBack = () => {
+  router.back();
+};
 </script>
 
 <template>
@@ -78,27 +85,30 @@ watch(
     <HomeHeader />
 
     <div class="search-container">
-      <!-- 搜索结果头部 -->
-      <div class="search-header">
-        <div class="header-content">
-          <h2 class="search-title">
-            <el-icon><Search /></el-icon>
-            搜索 "{{ route.query.keyword }}" 的结果
-          </h2>
-          <div class="search-meta">
-            <span class="result-count">
-              找到 {{ products.length }} 个相关商品
-            </span>
-            <div class="search-actions">
-              <el-radio-group v-model="sortType" size="small">
-                <el-radio-button label="default">综合排序</el-radio-button>
-                <el-radio-button label="sales">销量优先</el-radio-button>
-                <el-radio-button label="price">价格优先</el-radio-button>
-              </el-radio-group>
+      <!-- 页头 -->
+      <el-page-header class="page-header" @back="goBack">
+        <template #breadcrumb>
+          <el-breadcrumb separator="/">
+            <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
+            <el-breadcrumb-item>搜索结果</el-breadcrumb-item>
+          </el-breadcrumb>
+        </template>
+        
+        <template #content>
+          <div class="page-header-content">
+            <div class="left-content">
+              <el-icon class="mr-3"><Search /></el-icon>
+              <span class="text-large font-600 mr-3">搜索结果</span>
+              <el-tag>找到 {{ products.length }} 个商品</el-tag>
+            </div>
+            <div class="right-content">
+              <span class="quote-text text-sm" style="color: var(--el-text-color-regular)">
+                {{ randomQuote }}
+              </span>
             </div>
           </div>
-        </div>
-      </div>
+        </template>
+      </el-page-header>
 
       <div class="search-content">
         <!-- 左侧筛选栏 -->
@@ -321,5 +331,62 @@ watch(
     grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
     gap: 16px;
   }
+}
+
+/* 添加页头样式 */
+.page-header {
+  background: rgba(255, 255, 255, 0.02);
+  padding: 16px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 24px;
+}
+
+:deep(.el-page-header__left) {
+  color: var(--starlight);
+}
+
+:deep(.el-page-header__content),
+:deep(.el-page-header__title) {
+  color: var(--cosmic-blue);
+}
+
+:deep(.el-breadcrumb__inner) {
+  color: var(--starlight);
+}
+
+:deep(.el-breadcrumb__inner.is-link:hover) {
+  color: var(--cosmic-blue);
+}
+
+.page-header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.left-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0; /* 防止左侧内容被压缩 */
+}
+
+.right-content {
+  flex-grow: 1; /* 占据剩余空间 */
+  text-align: right; /* 文本右对齐 */
+  padding-left: 20px; /* 与左侧保持一定距离 */
+}
+
+.quote-text {
+  font-style: italic;
+  white-space: nowrap; /* 防止文本换行 */
+}
+
+/* 确保页头容器也是居中的 */
+:deep(.el-page-header__content) {
+  display: flex;
+  justify-content: flex-end;
+  flex: 1;
 }
 </style> 

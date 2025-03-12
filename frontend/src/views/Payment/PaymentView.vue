@@ -178,7 +178,7 @@ const handlePayment = async () => {
       ElMessage.success('支付成功')
       // 延迟跳转到订单列表
       setTimeout(() => {
-        router.push('/order')
+        router.push('/OrderList')
       }, 1500)
     } else {
       throw new Error(response.message || '支付失败')

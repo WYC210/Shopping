@@ -3,10 +3,12 @@ import { ref, watch, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { productService } from '@/api/modules/product';
 import type { Product } from '@/types/api/product';
+import { getRandomQuote } from '@/constants/pageQuotes';
 
 const route = useRoute();
 const products = ref<Product[]>([]);
 const loading = ref(false);
+const randomQuote = ref(getRandomQuote('product'));
 
 // 获取商品列表的方法
 const fetchProducts = async (keyword?: string) => {

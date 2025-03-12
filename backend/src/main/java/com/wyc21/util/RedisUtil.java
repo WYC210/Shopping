@@ -5,6 +5,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.util.concurrent.TimeUnit;
+import java.util.Set;
 
 @Component
 public class RedisUtil {
@@ -49,5 +50,12 @@ public class RedisUtil {
 
     public void deleteToken(String key) {
         stringRedisTemplate.delete(key);
+    }
+
+    /**
+     * 根据pattern获取所有匹配的key
+     */
+    public Set<String> keys(String pattern) {
+        return stringRedisTemplate.keys(pattern);
     }
 }

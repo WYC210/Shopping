@@ -2,6 +2,9 @@ package com.wyc21.service.impl;
 
 import java.util.Date;
 import java.time.LocalDateTime;
+import java.util.Set;
+import java.util.List;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -24,11 +27,17 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.wyc21.mapper.BrowseHistoryMapper;
+import org.springframework.data.redis.core.RedisTemplate;
+import com.wyc21.entity.BrowseHistory; // Adjust the package name if necessary
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
 public class UserServiceImpl implements IUserService {
 
     private static final Logger log = LoggerFactory.getLogger(UserServiceImpl.class);
+
+    private static final String REDIS_BROWSE_HISTORY_KEY = "browse_history:";
 
     @Autowired
     private UserMapper userMapper;
@@ -50,6 +59,15 @@ public class UserServiceImpl implements IUserService {
 
     @Autowired
     private IdGeneratorMapper idGeneratorMapper;
+
+    @Autowired
+    private BrowseHistoryMapper browseHistoryMapper;
+
+    @Autowired
+    private RedisTemplate<String, String> redisTemplate;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @Override
     public void reg(User user) {
@@ -109,7 +127,43 @@ public class UserServiceImpl implements IUserService {
         // 获取IP和地理位置
         String ip = ipUtil.getIpAddress(request);
         String ipLocation = ipUtil.getIpLocation(ip);
-        log.info("uid地址: {}",result.getUid());
+        log.info("uid地址: {}", result.getUid());
+
+        // 获取浏览器指纹
+        String fingerprint = request.getHeader("X-Device-Fingerprint");
+        log.info("获取到的浏览器指纹: {}", fingerprint);
+
+        if (fingerprint != null) {
+            try {
+                // 1. 先插入或更新浏览器指纹记录
+                browseHistoryMapper.insertFingerprintRecord(fingerprint, result.getUid());
+
+                // 2. 将Redis中的浏览记录同步到数据库
+                String fingerprintKey = REDIS_BROWSE_HISTORY_KEY + fingerprint;
+                Set<String> keys = redisUtil.keys(fingerprintKey + ":*");
+
+                if (keys != null && !keys.isEmpty()) {
+                    for (String key : keys) {
+                        String value = redisUtil.get(key);
+                        try {
+                            BrowseHistory history = objectMapper.readValue(value, BrowseHistory.class);
+                            browseHistoryMapper.insertBrowseHistory(
+                                    history.getHistoryId(),
+                                    history.getFingerprintId(),
+                                    result.getUid(),
+                                    history.getProductId(),
+                                    history.getBrowseTime());
+                        } catch (Exception e) {
+                            log.error("插入浏览记录失败: {}", e.getMessage());
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                log.error("处理浏览记录时发生错误: {}", e.getMessage());
+                // 继续登录流程，不影响用户登录
+            }
+        }
+
         // 生成访问令牌和刷新令牌
         String accessToken = jwtUtil.generateAccessToken(
                 result.getUid(),

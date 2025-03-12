@@ -5,6 +5,7 @@ import type { AddCartItemParams, CartItem } from '@/types/api/cart';
 import type { AxiosError } from 'axios';
 import { useUserStore } from '@/types/store/user';
 import axios from 'axios';
+import { fingerprintManager } from '@/utils/fingerprint';
 
 
 interface CartResponse {
@@ -163,13 +164,15 @@ export class CartService extends BaseApiService<CartItem> {
     try {
       const userStore = useUserStore();
       const token = userStore.accessToken;
+      const fingerprint = await fingerprintManager.getFingerprint();
 
       const response = await axios.post('http://localhost:8088/orders/purchase/cart', {
         cartItemIds
       }, {
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'X-Device-Fingerprint': fingerprint
         }
       });
 

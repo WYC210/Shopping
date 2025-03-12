@@ -38,4 +38,5 @@ public class JsonResult<E> implements Serializable {
     public JsonResult(Throwable e) {
         this.message = e.getMessage();
     }
+    
 }

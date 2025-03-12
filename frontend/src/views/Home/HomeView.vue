@@ -52,6 +52,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from "vue";
 import { useRouter } from "vue-router";
+import { useUserStore } from "@/types/store/user";
 import HomeHeader from "./components/HomeHeader.vue";
 import CategoryMenu from "./components/CategoryMenu.vue";
 import HomeCarousel from "./components/HomeCarousel.vue";
@@ -60,9 +61,9 @@ import type { Category, FilterParams, SortParams } from "@/types/store/HomeType"
 import { productService } from "@/api/modules/product";
 import type { Product } from "@/types/api/product";
 
-// 是否正在加载
+const router = useRouter();
+const userStore = useUserStore();
 const isLoading = ref(false);
-// 特色商品数据
 const featuredProducts = ref<Product[]>([]);
 const currentPage = ref(1);
 const pageSize = ref(10);
@@ -84,8 +85,6 @@ const sortParams = reactive<SortParams>({
   field: "default",
   order: "desc"
 });
-
-const router = useRouter();
 
 const handleCategoryChange = (category: Category) => {
   filterParams.categoryId = category.id || null;
@@ -130,9 +129,38 @@ const fetchProducts = async () => {
   }
 };
 
-onMounted(() => {
+// 检查登录状态和续签
+const checkAuthStatus = async () => {
+  try {
+    if (userStore.isLoggedIn) {
+      console.log('检查登录状态和尝试续签...');
+      const isValid = await userStore.refreshAccessToken();
+      console.log('Token 续签结果:', isValid);
+      
+      if (!isValid) {
+        console.log('Token 续签失败，清除登录状态');
+        await userStore.logout();
+      }
+    }
+  } catch (error) {
+    console.error('Token 续签检查失败:', error);
+    try {
+      await userStore.logout();
+    } catch (logoutError) {
+      console.error('清除登录状态失败:', logoutError);
+    }
+  }
+};
+
+onMounted(async () => {
   console.log("首页组件已加载");
-  fetchProducts(); // 加载商品数据
+  try {
+    await checkAuthStatus();
+  } catch (error) {
+    console.error('登录状态检查失败:', error);
+  } finally {
+    fetchProducts();
+  }
 });
 </script>
 

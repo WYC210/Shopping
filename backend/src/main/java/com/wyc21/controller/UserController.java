@@ -14,6 +14,9 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.wyc21.service.TokenService;
+import com.wyc21.service.BrowseHistoryService;
+import com.wyc21.entity.BrowseHistory;
+import com.wyc21.model.PageResult;
 
 @RestController
 @RequestMapping("/users")
@@ -27,6 +30,8 @@ public class UserController extends BaseController {
 
     @Autowired
     private TokenService tokenService; // 处理 token 逻辑
+    @Autowired
+    private BrowseHistoryService browseHistoryService;
 
     @Autowired
     private CookieUtil cookieUtil;
@@ -53,7 +58,10 @@ public class UserController extends BaseController {
     }
 
     @PostMapping("/login")
-    public JsonResult<User> login(@RequestBody User user, HttpServletRequest request, HttpServletResponse response) {
+    public JsonResult<User> login(@RequestBody User user,
+            HttpServletRequest request,
+            HttpServletResponse response,
+            @RequestHeader(value = "X-Device-Fingerprint", required = false) String fingerprint) {
         // 参数验证
         if (user.getUsername() == null || user.getUsername().trim().isEmpty()) {
             return new JsonResult<>(400, null, "用户名不能为空");
@@ -65,7 +73,11 @@ public class UserController extends BaseController {
         // 登录并获取完整的用户信息
         User data = userService.login(user.getUsername(), user.getPassword(), request, response);
 
-        // 创建响应对象，只包含需要返回的信息
+        // 登录成功后，关联用户ID和浏览器指纹
+        if (fingerprint != null) {
+            browseHistoryService.associateUserWithFingerprint(data.getUid(), fingerprint);
+        }
+
         return new JsonResult<>(OK, data, "登录成功");
     }
 
@@ -184,4 +196,38 @@ public class UserController extends BaseController {
         return new JsonResult<>(200, newAccessToken, "Token refreshed successfully");
     }
 
+    @GetMapping("/browse/history")
+    public JsonResult<PageResult<BrowseHistory>> getBrowseHistory(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestHeader(value = "X-Device-Fingerprint", required = false) String fingerprint,
+            HttpServletRequest request) {
+
+        String userId = null;
+        try {
+            // 尝试获取用户ID，如果未登录则为null
+            userId = request.getAttribute("uid") != null ? request.getAttribute("uid").toString() : null;
+        } catch (Exception e) {
+            log.debug("User not logged in");
+        }
+
+        // 输出浏览器指纹到控制台
+        log.info("收到的浏览器指纹收到的浏览器指纹: {}", fingerprint);
+
+        PageResult<BrowseHistory> result;
+        if (userId != null) {
+            // 用户已登录，获取关联的浏览记录
+            result = browseHistoryService.getBrowseHistoryByUserId(userId, page, size);
+        } else if (fingerprint != null) {
+            // 用户未登录，通过浏览器指纹获取记录
+            result = browseHistoryService.getBrowseHistoryByFingerprint(fingerprint, page, size);
+        } else {
+            return new JsonResult<>(400, null, "无法识别用户");
+        }
+
+        // 输出从Redis读取的记录到控制台
+        log.info("Retrieved browse history: {}", result.getRecords());
+
+        return new JsonResult<>(OK, result);
+    }
 }

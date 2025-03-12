@@ -8,10 +8,17 @@ import App from './App.vue'
 import router from './router'
 import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
-import './utils/tokenManager' // 确保 TokenManager 被初始化
+import { fingerprintManager } from './utils/fingerprint'
+import { httpClient } from './utils/request'
+import { tokenManager } from './utils/tokenManager'
 
+// 预先生成指纹
+fingerprintManager.getFingerprint().then(() => {
+  console.log('Fingerprint initialized')
+})
 
 const app = createApp(App)
+
 app.use(ElementPlus)
 app.use(createPinia())
 app.use(router)

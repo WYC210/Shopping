@@ -1,5 +1,6 @@
 import type { AxiosInstance, AxiosRequestConfig } from 'axios';
 import type { BaseResponse } from '@/types/api';
+import { fingerprintManager } from '@/utils/fingerprint';
 
 // 添加基础 URL 配置
 const BASE_API_URL = 'http://localhost:8088';
@@ -40,7 +41,11 @@ export class BaseApiService<T = any> { // 添加泛型
       ...config,
       url: config.url.startsWith('http') 
         ? config.url 
-        : `${this.baseUrl}${config.url}`  // 避免重复的基础URL
+        : `${this.baseUrl}${config.url}`,
+      headers: {
+        ...config.headers,
+        'X-Device-Fingerprint': await fingerprintManager.getFingerprint() // 添加浏览器指纹
+      }
     };
     
     try {

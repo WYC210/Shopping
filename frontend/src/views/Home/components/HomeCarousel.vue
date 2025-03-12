@@ -4,7 +4,7 @@
       :interval="4000" 
       :height="contentHeight"
       class="carousel"
-      indicator-position="outside"
+      indicator-position="none"
       :autoplay="true"
     >
       <el-carousel-item v-for="(item, index) in carouselItems" :key="index">
@@ -66,7 +66,7 @@ const getImageUrl = (path: string) => {
   width: 100%;
   border-radius: var(--border-radius);
   overflow: hidden;
-  background: white;
+  background: rgb(122, 37, 37);
   box-shadow: var(--box-shadow);
 }
 
@@ -87,25 +87,9 @@ const getImageUrl = (path: string) => {
   z-index: -100;
 }
 
-/* 优化指示器样式 */
+/* 隐藏指示器样式 */
 :deep(.el-carousel__indicators) {
-  transform: translateY(1rem);
-}
-
-:deep(.el-carousel__indicator) {
-  padding: 0.75rem;
-}
-
-:deep(.el-carousel__button) {
-  width: 2rem;
-  height: 0.25rem;
-  border-radius: 0.125rem;
-  background-color: rgba(255, 255, 255, 0.8);
-  transition: all 0.3s ease;
-}
-
-:deep(.el-carousel__indicator.is-active .el-carousel__button) {
-  background-color: var(--el-color-primary);
+  display: none; /* 隐藏底部指示器 */
 }
 
 /* 优化箭头样式 */
@@ -127,18 +111,6 @@ const getImageUrl = (path: string) => {
     width: 2.5rem;
     height: 2.5rem;
     font-size: 1.25rem;
-  }
-  
-  :deep(.el-carousel__indicators) {
-    transform: translateY(0.5rem);
-  }
-  
-  :deep(.el-carousel__indicator) {
-    padding: 0.5rem;
-  }
-  
-  :deep(.el-carousel__button) {
-    width: 1.5rem;
   }
 }
 </style>
