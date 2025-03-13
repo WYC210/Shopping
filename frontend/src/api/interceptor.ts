@@ -15,7 +15,7 @@ instance.interceptors.request.use(
     if (userStore.accessToken) {
       config.headers.Authorization = `Bearer ${userStore.accessToken}`;
     }
-    console.log('发送请求，headers:', config.headers); // 添加日志
+   
     return config;
   },
   (error) => {

@@ -1,7 +1,7 @@
 // src/api/modules/order.ts
 import { httpClient } from '@/utils/request';
 import { BaseCrudService } from './base';
-import type { Order, PaymentParams } from '@/types/api/order.ts';
+import type { Order } from '@/types/api/order.ts';
 import type { OrderItem } from '@/types/api/order';
 
 interface OrderStats {
@@ -40,13 +40,11 @@ export class OrderService extends BaseCrudService<Order> {
   }
 
   // 获取订单列表
-  async getOrderList(): Promise<Order[]> {
-    const response = await this.request<Order[]>({  // 直接请求 Order 数组
-      url: this.getUrl(''),
-      method: 'GET'
+  async getOrderList(): Promise<{ data: Order[] }> {
+    return this.request({
+      url: '',
+      method: 'GET',
     });
-
-    return response;  // 直接返回响应
   }
 
   // 获取订单详情

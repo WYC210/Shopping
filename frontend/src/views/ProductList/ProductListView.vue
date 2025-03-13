@@ -1,22 +1,20 @@
-<!-- views/ProductList/ProductListView.vue -->
+
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from "vue";
+import { ref,  onMounted, watch } from "vue";
 import { useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
 import type { Product } from "@/types/api/product";
 import { productService } from "@/api/modules/product";
 import { categoryService } from "@/api/modules/category";
-import errorImage from '@/assets/cs.png';
-import { ShoppingCart } from '@element-plus/icons-vue';
-import { useCartStore } from '@/types/store/cart';
-import type { Category } from '@/types/store/HomeType';
+import errorImage from '@/assets/logo_w.png';
+
 import HomeHeader from '@/views/Home/components/HomeHeader.vue'
 
 interface ProductParams {
   pageNum: number;
   pageSize: number;
-  sortBy: 'default' | 'price' | 'time' | 'sales';  // 排序字段
-  order: 'asc' | 'desc';  // 排序方向
+  sortBy: 'default' | 'price' | 'time' | 'sales'; 
+  order: 'asc' | 'desc';  
 }
 
 interface Pagination {
@@ -38,17 +36,13 @@ interface FilterParams {
 const router = useRouter();
 const products = ref<Product[]>([]);
 const loading = ref(false);
-const hoveredProduct = ref<Product | null>(null);
-const showHoverCard = ref(false);
-const hoverCardPosition = ref({ x: 0, y: 0 });
-const cartStore = useCartStore();
 const categories = ref<{ id: string; name: string }[]>([]);
 
 // 分页和排序参数
 const productParams = ref<ProductParams>({
   pageNum: 1,
   pageSize: 10,
-  sortBy: 'default',  // 默认排序
+  sortBy: 'default',  
   order: 'desc'
 });
 
@@ -203,12 +197,12 @@ const handleCurrentChange = (page: number) => {
 };
 
 // 跳转到商品详情
-const goToDetail = (productId: number) => {
+const goToDetail = (productId: string) => {
   if (!productId) {
     ElMessage.error('商品ID不存在');
     return;
   }
-  console.log('跳转到商品详情，ID:', productId);
+
   router.push(`/product/${productId}`);
 };
 
@@ -253,7 +247,7 @@ const fetchCategories = async () => {
   try {
     const response = await categoryService.getCategoryTree();
     categories.value = response.data;
-    console.log(response.data);
+ 
     
   } catch (error) {
     ElMessage.error('获取分类失败');
@@ -281,7 +275,7 @@ onMounted(() => {
 
 <template>
   <div class="product-list">
-    <!-- 使用 HomeHeader 组件并传入 showManageButton prop -->
+  
     <HomeHeader :showManageButton="true" />
     
     <!-- 排序选项 -->
@@ -396,10 +390,7 @@ onMounted(() => {
             <h3>{{ product.name }}</h3>
             <p class="price">¥{{ product.price.toFixed(2) }}</p>
             <p class="description">{{ product.description }}</p>
-               <!-- <h3 class="product-name">{{ product.name || '未知商品' }}</h3>
-            <p class="price">¥{{ (product.price || 0).toFixed(2) }}</p>
-            <p class="description">{{ product.description || '暂无描述' }}</p>
-            <p class="sales">销量: {{ product.sales || 0 }}</p> -->
+              
           </div>
         </el-card>
       </el-col>
@@ -423,11 +414,11 @@ onMounted(() => {
 <style scoped>
 .product-list {
   padding: 20px;
-  padding-top: 100px; /* 保持这个以给 header 留出空间 */
+  padding-top: 100px; 
   background: rgba(6, 5, 36, 0.95);
   border-radius: 15px;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-  min-height: 100vh; /* 确保最小高度占满视口 */
+  min-height: 100vh; 
   width: 100%;
 }
 

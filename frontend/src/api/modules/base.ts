@@ -1,5 +1,4 @@
 import type { AxiosInstance, AxiosRequestConfig } from 'axios';
-import type { BaseResponse } from '@/types/api';
 import { fingerprintManager } from '@/utils/fingerprint';
 
 // 添加基础 URL 配置
@@ -50,7 +49,7 @@ export class BaseApiService<T = any> { // 添加泛型
     
     try {
       const response = await this.httpClient.request<D>(fullConfig);
-      console.log('Request URL:', fullConfig.url); // 调试用
+     
       
       // 检查 HTTP 状态码
       if (response.status !== 200) {

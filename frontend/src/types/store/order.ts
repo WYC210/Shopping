@@ -1,10 +1,10 @@
-// src/types/store/order.ts
+
 import { defineStore } from 'pinia';
 import { orderService } from '@/api/modules/order';
 import { ElMessage } from 'element-plus';
 import router from '@/router';
 import { tokenManager } from '@/utils/tokenManager';
-import type { Order as ApiOrder } from '@/types/api/order';
+
 import type { OrderStatus } from '@/types/api/payment'
 
 export interface Order {
@@ -60,10 +60,10 @@ export const useOrderStore = defineStore('order', {
 
   actions: {
     // 更新订单状态
-    updateOrderStatus(orderId: string, status: string) {
+    updateOrderStatus(orderId: string, status: OrderStatus) {
       const order = this.orderList.find(order => order.orderId === orderId);
       if (order) {
-        order.status = status;
+        order.status = status as OrderStatus;
         this.orderList = [...this.orderList];
       } else {
         this.fetchOrderList();
@@ -76,8 +76,10 @@ export const useOrderStore = defineStore('order', {
         const data = await orderService.createOrder(orderData);
         this.currentOrder = {
           ...data,
-          orderId: data.id,
-          items: orderData.items
+          orderId: data.orderId,
+          items: orderData.items,
+          createTime: data.createdTime,
+          status: data.status as OrderStatus
         };
         return data;
       } catch (error: any) {
@@ -94,7 +96,7 @@ export const useOrderStore = defineStore('order', {
         this.loading = true;
         ElMessage.info('正在处理支付请求...');
 
-        console.log('支付请求原始参数:', orderData);
+       
 
         const orderIdStr = orderData.orderId;
         const paymentDataStr: PaymentData = {
@@ -108,28 +110,15 @@ export const useOrderStore = defineStore('order', {
         }
 
         const token = tokenManager.getAccessToken();
-        console.log('获取到的 token:', token);
+  
 
         if (!token) {
           throw new Error('未登录或 token 已过期');
         }
 
-        console.log('最终支付请求信息:', {
-          orderIdStr,
-          paymentDataStr,
-          token,
-          requestHeaders: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
+   
 
-        const response = await orderService.payOrder(orderIdStr, paymentDataStr, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
+        const response = await orderService.payOrder(orderIdStr, paymentDataStr);
 
         if (response?.state === 200 && response.data) {
           ElMessage.success('支付成功');
@@ -150,24 +139,23 @@ export const useOrderStore = defineStore('order', {
     // 获取订单列表
     async fetchOrderList() {
       try {
-        this.loading = true
-        const response = await orderService.getOrderList() as OrderResponse
-        console.log('API 响应:', response)
+        this.loading = true;
+        const response = (await orderService.getOrderList() as unknown) as OrderResponse;
+       
         
         if (response?.status === 200 && Array.isArray(response.data)) {
-          // 直接将 response.data 赋值给 orderList，因为它已经是一个订单数组
-          this.orderList = response.data
-          console.log('处理后的订单列表:', this.orderList)
+          this.orderList = response.data;
+          
         } else {
-          console.warn('API 响应格式不正确:', response)
-          this.orderList = []
+          console.warn('API 响应格式不正确:', response);
+          this.orderList = [];
         }
       } catch (error: any) {
-        console.error('获取订单列表失败:', error)
-        this.orderList = []
-        this.error = error.message
+        console.error('获取订单列表失败:', error);
+        this.orderList = [];
+        this.error = error.message;
       } finally {
-        this.loading = false
+        this.loading = false;
       }
     },
 
@@ -175,9 +163,15 @@ export const useOrderStore = defineStore('order', {
       this.loading = true;
       try {
         const response = await orderService.getOrderDetail(orderId);
+        const orderData = Array.isArray(response.data) ? response.data[0] : response.data;
+        
         this.currentOrder = {
-          ...response,
-          orderId: response.id || orderId
+          orderId: orderData.orderId || orderId,
+          totalAmount: orderData.totalAmount,
+          status: orderData.status as OrderStatus,
+          items: orderData.items,
+          createTime: orderData.createdTime,
+          userId: orderData.userId
         };
         return response;
       } catch (error: any) {

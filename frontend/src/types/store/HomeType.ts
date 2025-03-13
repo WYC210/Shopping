@@ -27,7 +27,7 @@ export interface SortParams {
   order: "asc" | "desc";
 }
 
-// 轮播项类型
+
 export interface CarouselItem {
   image: string;
   title: string;

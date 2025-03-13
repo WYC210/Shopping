@@ -1,9 +1,7 @@
 // src/api/modules/product.ts
 import { BaseApiService } from './base';
 import { httpClient } from '@/utils/request';
-import type { Product, ProductResponse, PaginationParams, CategoryResponse } from '@/types/api/product';
-import type { Category } from '@/types/store/HomeType';
-import { v4 as uuidv4 } from 'uuid'; // 引入 UUID 库
+import type { Product, ProductResponse, PaginationParams } from '@/types/api/product';
 
 interface ProductSearchParams extends PaginationParams {
   pageNum?: number;
@@ -39,15 +37,7 @@ interface ProductDetailResponse {
   message?: string;
 }
 
-interface ProductDetailsResponse {
-  data: {
-    product: Product;
-    options?: any[];
-    comments?: any[];
-  };
-  status: number;
-  message?: string;
-}
+
 
 // 评论接口
 interface ReviewRequest {
@@ -131,7 +121,7 @@ export class ProductService extends BaseApiService<Product> {
     modifiedTime?: string; // 可选字段
   }): Promise<any> {
     const requestBody = {
-      productId: uuidv4(), // 生成唯一的商品ID
+      productId: '', // 生成唯一的商品ID
       name: data.name,
       description: data.description || '',
       price: data.price,
@@ -316,6 +306,11 @@ export class ProductService extends BaseApiService<Product> {
       url: `/reviews/${reviewId}`,
       method: 'DELETE'
     });
+  }
+
+  async getAllProducts(params: { page: number; size: number }) {
+    const response = await httpClient.get('/products/all', { params });
+    return response.data; // 根据您的 API 返回结构调整
   }
 }
 

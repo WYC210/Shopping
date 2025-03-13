@@ -1,7 +1,7 @@
 <template>
   <header class="header" :class="{ 'header-fixed': isScrolled }">
     <div class="header-content">
-      <!-- Logo -->
+    
       <router-link to="/" class="logo">
         <img src="@/assets/logo_w.png" alt="Logo" />
       </router-link>
@@ -56,8 +56,8 @@
       <nav class="nav-menu">
         <router-link to="/" class="nav-item">首页</router-link>
         <router-link to="/productsList" class="nav-item">商品</router-link>
-        <router-link v-if="showManageButton" to="/manage-products" class="nav-item">
-          管理商品
+        <router-link v-if="showManageButton" to="/orderlist" class="nav-item">
+          我的订单
         </router-link>
         <router-link to="/cart" class="nav-item">
           <el-badge :value="cartStore.totalCount" :hidden="!cartStore.totalCount">
@@ -107,9 +107,9 @@ import { ShoppingCart, Search, Loading } from "@element-plus/icons-vue";
 import { useUserStore } from "@/types/store/user";
 import { useCartStore } from "@/types/store/cart";
 import { ElMessage } from 'element-plus';
-import defaultAvatar from '@/assets/cs.png';
-import { productService } from "@/api/modules/product";
-import type { Product } from "@/types/api/product";
+import defaultAvatar from '@/assets/logo_w.png';
+
+
 
 const router = useRouter();
 const userStore = useUserStore();
@@ -118,7 +118,7 @@ const isScrolled = ref(false);
 const isSearchExpanded = ref(false);
 const searchKeyword = ref('');
 
-const props = defineProps({
+defineProps({
   showManageButton: {
     type: Boolean,
     default: false
@@ -134,8 +134,8 @@ const hotSearches = [
   '今日推荐'
 ];
 
-// 添加搜索结果状态
-const searchResults = ref<Product[]>([]);
+
+
 const isSearching = ref(false);
 const noResults = ref(false);
 
@@ -214,7 +214,7 @@ const checkLoginStatus = async () => {
 
   // 验证 token
   const isValid = await validateToken();
-  console.log('Token 验证结果:', isValid);
+ 
   
   return isValid;
 };

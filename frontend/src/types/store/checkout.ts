@@ -1,4 +1,4 @@
-// src/types/store/checkout.ts
+
 import { defineStore } from 'pinia';
 
 interface OrderItem {
@@ -7,7 +7,7 @@ interface OrderItem {
   name: string;
   price: number;
   quantity: number;
-  // 其他必要字段
+
 }
 
 interface OrderData {

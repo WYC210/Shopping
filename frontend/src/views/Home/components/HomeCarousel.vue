@@ -14,6 +14,7 @@
             :alt="item.title"
             fit="cover"
             class="carousel-image"
+            @error="handleImageError"
           >
             <template #error>
               <div class="image-slot">
@@ -28,36 +29,46 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref} from "vue";
 import { Picture } from "@element-plus/icons-vue";
+import { ElMessage } from "element-plus";
 
 interface Props {
   contentHeight: string;
 }
 
-const props = defineProps<Props>();
+interface CarouselItem {
+  image: string;
+  title: string;
+}
+
+defineProps<Props>();
 
 // 轮播图数据
-const carouselItems = ref([
+const carouselItems = ref<CarouselItem[]>([
   { 
-    image: '/src/assets/cs.png', 
-    title: '轮播图1' 
+    image: 'jilicart.jpeg', 
+    title: '三体' 
   },
   { 
-    image: '/src/assets/cs2.png', 
-    title: '轮播图2' 
+    image: 'xiaomiultra.jpeg', 
+    title: '夹克' 
   },
-  { 
-    image: '/src/assets/cs.png', 
-    title: '轮播图3' 
+  {
+    image: 'hongqi.jpeg',
+    title: '红旗'
   }
 ]);
 
 // 处理图片路径
-const getImageUrl = (path: string) => {
-  if (!path) return '';
-  // 添加基础URL前缀
-  return `http://localhost:5173${path}`;
+const getImageUrl = (imageName: string) => {
+  if (!imageName) return '';
+  return `http://localhost:8088/products/images/${imageName}`;
+}
+
+// 处理图片加载错误
+const handleImageError = () => {
+  ElMessage.error('图片加载失败');
 }
 </script>
 
@@ -87,12 +98,12 @@ const getImageUrl = (path: string) => {
   z-index: -100;
 }
 
-/* 隐藏指示器样式 */
+
 :deep(.el-carousel__indicators) {
-  display: none; /* 隐藏底部指示器 */
+  display: none; 
 }
 
-/* 优化箭头样式 */
+
 :deep(.el-carousel__arrow) {
   background-color: rgba(0, 0, 0, 0.3);
   border-radius: 50%;

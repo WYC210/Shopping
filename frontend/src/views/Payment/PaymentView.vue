@@ -91,10 +91,10 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { orderService } from '@/api/modules/order'
 import HomeHeader from '@/views/Home/components/HomeHeader.vue'
-import defaultImage from '@/assets/cs2.png'
+import defaultImage from '@/assets/logo_w.png'
 import alipayIcon from '@/assets/logo_w.png'
 import wechatIcon from '@/assets/logo_w.png'
-import type { Order, OrderResponse, OrderItem } from '@/types/api/order'
+import type {OrderItem } from '@/types/api/order'
 
 const route = useRoute()
 const router = useRouter()

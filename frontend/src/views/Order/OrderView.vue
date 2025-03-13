@@ -22,7 +22,7 @@
         </el-tabs>
 
         <OrderList 
-          :orders="filteredOrders" 
+          :orders ="filteredOrders as []"   
           :loading="loading"
           @pay-order="handlePayOrder"
           @cancel-order="handleCancelOrder"
@@ -54,7 +54,13 @@ const fetchOrders = async () => {
   try {
     const response = await orderService.getOrderList();
     console.log('获取到的订单列表:', response);
-    orders.value = response.data; // 确保从响应中获取数据
+    
+
+    orders.value = response?.data ? response.data.map(order => ({
+      ...order,
+      createdTime: order.createdTime || new Date().toISOString(),
+      status: order.status 
+    })) : [];
   } catch (error) {
     console.error('获取订单列表失败:', error);
     ElMessage.error('获取订单列表失败');

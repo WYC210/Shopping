@@ -1,4 +1,4 @@
-/* eslint-disable */
+
 <template>
   <div class="login-container" ref="containerRef">
     <el-card class="login-box">
@@ -124,7 +124,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, nextTick } from "vue";
+import { ref } from "vue";
 import { useUserStore } from "@/types/store/user";
 import { useRouter, useRoute } from "vue-router";
 import { ElMessage } from "element-plus";
@@ -135,9 +135,9 @@ import {
   Apple,
   ChromeFilled,
 } from "@element-plus/icons-vue";
-import { ChatDotRound } from "@element-plus/icons-vue";
+
 import type { FormInstance } from 'element-plus'
-import { AuthService } from '@/api/modules/auth';
+
 
 const userStore = useUserStore();
 const router = useRouter();
@@ -392,7 +392,7 @@ const handleLogin = async () => {
   height: 64px;
 }
 
-/* 注意：每个路径都需要在 SVG 中设置 --path-length 变量 */
+
 .animated-text {
   max-width: 100%;
   height: auto;

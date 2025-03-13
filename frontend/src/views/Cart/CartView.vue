@@ -4,41 +4,20 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Picture, ShoppingCart } from '@element-plus/icons-vue'
+import {  ShoppingCart } from '@element-plus/icons-vue'
 import { useCartStore } from '@/types/store/cart'
 import { useUserStore } from '@/types/store/user'
-import errorImage from '@/assets/cs.png'
+import errorImage from '@/assets/logo_w.png'
 import HomeHeader from '@/views/Home/components/HomeHeader.vue'
-import { cartService } from '@/api/modules/cart'
-import { tokenManager } from '@/utils/tokenManager'
 
-// 定义类型
-interface CartItem {
-  cartItemId: string;
-  cartId: string;
-  productId: string;
-  productName: string;
-  price: number;
-  quantity: number;
-  imageUrl: string;
-  createdUser: string;
-  createdTime: string;
-  modifiedUser: string | null;
-  modifiedTime: string;
-  userId: string | null;
-  orderStatus: string | null;
-  isPay: boolean | null;
-  paidQuantity: number;
-  availableQuantity: number | null;
-  selected: boolean;
-}
+
+
 
 const router = useRouter()
 const cartStore = useCartStore()
 const userStore = useUserStore()
 const loading = ref<boolean>(false)
-const errorimage = errorImage 
-const headerRef = ref()
+
 
 // 获取购物车数据
 const cartItems = computed(() => cartStore.cartItems)

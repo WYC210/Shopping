@@ -1,4 +1,4 @@
-// src/types/api/user.type.ts
+
 export interface UserProfile {
   id: string;
   username: string;
@@ -14,7 +14,7 @@ export interface LoginParams {
   password: string;
 }
 
-// 新增更新密码的参数类型
+
 export interface UpdatePasswordParams {
   oldPassword: string;
   newPassword: string;

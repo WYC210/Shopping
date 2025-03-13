@@ -1,6 +1,6 @@
-// src/utils/request.ts
-import axios from 'axios'
-import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
+
+import axios, { AxiosHeaders } from 'axios'
+import type { AxiosInstance,  InternalAxiosRequestConfig } from 'axios'
 import { tokenManager } from './tokenManager'
 import { fingerprintManager } from './fingerprint'
 import { useUserStore } from '../types/store/user'
@@ -10,7 +10,7 @@ class HttpClient {
   private static instance: AxiosInstance
 
   private constructor() {
-    // 创建 axios 实例
+
     HttpClient.instance = axios.create({
       baseURL: 'http://localhost:8088',
       timeout: 5000,
@@ -33,25 +33,24 @@ class HttpClient {
 
     // 请求拦截器
     httpClient.interceptors.request.use(
-      async (config: AxiosRequestConfig) => {
+      async (config: InternalAxiosRequestConfig) => {
         // 获取 token
         const token = tokenManager.getAccessToken()
         if (token) {
-          config.headers = {
+          config.headers = AxiosHeaders.from({
             ...config.headers,
             Authorization: `Bearer ${token}`
-          }
+          })
         }
 
         // 添加浏览器指纹
         const fingerprint = await fingerprintManager.getFingerprint()
-        config.headers = {
+        config.headers = AxiosHeaders.from({
           ...config.headers,
           'X-Device-Fingerprint': fingerprint
-        }
+        })
 
-        console.log('请求的浏览器指纹:', fingerprint)
-
+    
         return config
       },
       (error) => {

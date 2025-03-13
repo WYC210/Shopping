@@ -1,6 +1,6 @@
 <template>
   <div class="profile-dashboard">
-    <!-- 保留原有的页头 -->
+ 
     <HomeHeader />
 
     <div class="dashboard-container">
@@ -258,19 +258,17 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import {
-  User, Setting, List, Timer, Wallet,
-  ShoppingCart, Star
-} from '@element-plus/icons-vue';
-import { useUserStore } from '@/types/store/user';
+// import {
+//   User, Setting, List, Timer, Wallet,
+//   ShoppingCart, Star
+// } from '@element-plus/icons-vue';
 import { getRandomQuote } from '@/constants/pageQuotes';
 import HomeHeader from '@/views/Home/components/HomeHeader.vue';
-import { serviceRegistry } from '@/api/index'; // 确保路径正确
+import { serviceRegistry } from '@/api/index'; 
 import { useRouter } from 'vue-router';
 
 const activeMenu = ref('overview');
 const historyTab = ref('products');
-const userStore = useUserStore();
 const userInfo = ref({
   username: '',
   email: '',
@@ -298,7 +296,7 @@ const recentActivities = ref([
   { id: 2, time: '2024-03-21 10:20:30', type: 'info', content: '账户余额更新' }
 ]);
 
-const orders = ref([]); // 初始化为空数组
+const orders = ref<any[]>([]); 
 
 const wallet = ref({
   balance: 1234.56,
@@ -319,8 +317,8 @@ const historyPagination = ref({
   total: 0
 });
 
-// 修改 browsingHistory 的类型和初始值
-const browsingHistory = ref([]);
+// 修改 browsingHistory 的类型
+const browsingHistory = ref<any[]>([]);
 
 const router = useRouter();
 
@@ -371,14 +369,14 @@ const settings = ref({
 
 const fetchUserInfo = async () => {
   try {
-    const response = await serviceRegistry.user.getProfile(); // Call the API to get user info
-    console.log(response);
+    const response = await serviceRegistry.user.getProfile();
+   
     
     userInfo.value = {
-      username: response.data.username || '未注册',
-      email: response.data.email || '未设置',
-      phone: String(response.data.phone || '未设置'),
-      registeredAt: response.data.createdTime ?? '未注册' // Provide a default value if not present
+      username: response.username || '未注册',
+      email: response.email || '未设置',
+      phone: String(response.phone || '未设置'),
+      registeredAt: response.createdAt ? formatDate(response.createdAt.toString()) : '未注册'
     };
   } catch (error) {
     console.error('获取用户信息失败:', error);
@@ -388,8 +386,8 @@ const fetchUserInfo = async () => {
 const fetchOrders = async () => {
   try {
     const response = await serviceRegistry.order.getOrderList();
-    console.log(response);
-    orders.value = response.data; // 更新订单数据
+ 
+    orders.value = response.data;
   } catch (error) {
     console.error('获取订单信息失败:', error);
   }
@@ -419,7 +417,7 @@ const fetchBrowseHistory = async () => {
       historyPagination.value.page,
       historyPagination.value.size
     );
-    console.log('浏览记录:', response);
+   
     
     if (response.data && response.data.records) {
       browsingHistory.value = response.data.records; // 更新浏览历史数据
@@ -462,7 +460,7 @@ const goToProductDetail = (productId: string) => {
   display: flex;
   flex: 1;
   overflow: hidden;
-  margin-top: 60px; /* 添加顶部边距 */
+  margin-top: 60px; 
 }
 
 /* 侧边栏 */
@@ -471,7 +469,7 @@ const goToProductDetail = (productId: string) => {
   background: rgba(53, 26, 74, 0.95);
   padding: 20px;
   overflow-y: auto;
-  margin-top: 20px; /* 添加顶部边距 */
+  margin-top: 20px; 
 }
 
 .profile-menu ::v-deep .el-menu-item {
@@ -615,7 +613,7 @@ const goToProductDetail = (productId: string) => {
 }
 
 .menu-item {
-  background: rgba(250, 159, 252, 0.1); /* 修改背景颜色 */
+  background: rgba(250, 159, 252, 0.1); 
 }
 
 .pagination-container {

@@ -2,10 +2,10 @@
 import { ref, watch, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { productService } from '@/api/modules/product';
-import type { Product } from '@/types/api/product';
+import type { Product, ProductResponse } from '@/types/api/product';
 import ProductCard from '@/views/Home/components/ProductCard.vue';
 import HomeHeader from '@/views/Home/components/HomeHeader.vue';
-import { Search } from '@element-plus/icons-vue';
+// import { Search } from '@element-plus/icons-vue';
 import { getRandomQuote } from '@/constants/pageQuotes';
 
 const route = useRoute();
@@ -31,7 +31,7 @@ const sortedProducts = computed(() => {
       result.sort((a, b) => a.price - b.price);
       break;
     default:
-      // 综合排序，可以根据多个因素计算权重
+    
       break;
   }
   
@@ -53,9 +53,13 @@ const searchProducts = async (keyword: string) => {
   loading.value = true;
   try {
     console.log('执行搜索请求，关键词:', keyword);
-    const response = await productService.searchProducts(keyword);
+    const response: ProductResponse = await productService.searchProducts({
+      keyword: keyword,
+      page: 1, // 添加分页参数
+      size: 10 // 添加分页参数
+    }) as unknown as ProductResponse; 
     console.log('搜索结果:', response);
-    products.value = response.list;
+    products.value = response.list; 
   } catch (error) {
     console.error('搜索失败:', error);
   } finally {
@@ -186,7 +190,7 @@ const goBack = () => {
 }
 
 .search-container {
-  padding-top: 80px; /* 为固定导航栏留出空间 */
+  padding-top: 80px; 
 }
 
 .search-header {

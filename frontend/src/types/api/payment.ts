@@ -1,4 +1,4 @@
-// src/types/api/payment.type.ts
+
 export type PaymentMethod = 'alipay' | 'wechat' | 'creditCard';
 
 export interface Payment {

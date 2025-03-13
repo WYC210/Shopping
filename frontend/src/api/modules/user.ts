@@ -4,7 +4,7 @@ import { BaseApiService } from './base';
 import { validator } from '@/utils/validator'
 import type { UserProfile, LoginParams, UpdatePasswordParams } from '@/types/api/user.ts';
 import { tokenManager } from '@/utils/tokenManager';
-import axios from 'axios';
+
 
 /**
  * 用户服务类
@@ -85,29 +85,17 @@ export class UserService extends BaseApiService<UserProfile> {
     });
   }
 
-  // 获取 token 的辅助方法
-  private getAccessToken(): string | null {
-    return localStorage.getItem('accessToken');
-  }
 
   /**
    * 更新用户个人资料
    */
-  async updateProfile(data: Partial<UserProfile>): Promise<UserProfile> {
+  async updateProfile(data: Partial<UserProfile> & { gender?: string }): Promise<UserProfile> {
     const token = tokenManager.getAccessToken();
     if (!token) {
       throw new Error('未登录或 token 已失效');
     }
 
-    console.log('发送更新个人信息请求:', {
-      url: '/users/update',
-      method: 'PATCH',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
-      data
-    });
+    
 
     try {
       const response = await this.request({
@@ -124,8 +112,8 @@ export class UserService extends BaseApiService<UserProfile> {
         }
       });
 
-      console.log('更新个人信息响应:', response);
-      return response.data;
+      
+      return response;
     } catch (error) {
       console.error('更新个人信息失败:', error);
       throw error;

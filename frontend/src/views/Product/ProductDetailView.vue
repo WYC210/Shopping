@@ -1,54 +1,26 @@
-<!-- views/Product/ProductDetailView.vue -->
+
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { ElMessage, ElMessageBox } from "element-plus"
-import { ShoppingCart, Picture, InfoFilled } from "@element-plus/icons-vue"
+import {  Picture, InfoFilled } from "@element-plus/icons-vue"
 import { productService } from "@/api/modules/product"
 import { orderService } from "@/api/modules/order"
 import { useUserStore } from "@/types/store/user"
-import { useOrderStore } from "@/types/store/order"
 import { useCategoryStore } from "@/types/store/category"
-import { useCartStore } from '@/types/store/cart'
-import { useProductStore } from '@/types/store/product'
-import { useCheckoutStore } from '@/types/store/checkout'
-import type { Product } from '@/types/api/product'
-import errorImage from '@/assets/cs.png'
+
+import type {  ProductDetail } from '@/types/api/product'
+import errorImage from '@/assets/logo_w.png'
 import HomeHeader from '@/views/Home/components/HomeHeader.vue'
-import type { OrderStatus } from '@/types/api/payment'
-import { cartService } from '@/api/modules/cart'
+
 import { getRandomQuote } from '@/constants/pageQuotes'
-
-// 定义接口
-interface ProductDetail extends Product {
-  stock?: number;
-  rating?: number;
-  reviewCount?: number;
-  tags?: string;
-  brand?: string;
-  categoryId?: string;
-  description?: string;
-  images?: string[];
-}
-
-interface ProductDetailResponse {
-  data: {
-    product: ProductDetail;
-    images: string[];  // 改为必需属性
-  };
-  status: number;
-  message?: string;
-}
+import type { Review, ReviewResponse } from '@/types/api/review'
 
 const route = useRoute()
 const router = useRouter()
 const productId = route.params.id as string
 const userStore = useUserStore()
-const orderStore = useOrderStore()
 const categoryStore = useCategoryStore()
-const cartStore = useCartStore()
-const productStore = useProductStore()
-const checkoutStore = useCheckoutStore()
 
 // 商品数据
 const product = ref<ProductDetail | null>(null)
@@ -57,7 +29,7 @@ const quantity = ref<number>(1)
 
 // 计算属性
 const productRating = computed(() => product.value?.rating || 0)
-const productTags = computed(() => product.value?.tags ? product.value.tags.split(",") : [])
+
 const categoryName = computed(() => {
   if (!product.value?.categoryId) return ""
   const category = categoryStore.getCategoryById(product.value.categoryId)
@@ -83,8 +55,6 @@ const fetchProductDetail = async (): Promise<void> => {
     
     const response = await productService.getProductDetail(productId)
     
-    // 输出响应数据到控制台
-    console.log('获取商品详情响应:', response);
 
     if (response.data) {
       product.value = {
@@ -95,7 +65,7 @@ const fetchProductDetail = async (): Promise<void> => {
       throw new Error("获取商品详情失败")
     }
   } catch (error) {
-    console.error("获取商品详情失败:", error)
+    
     ElMessage.error(error instanceof Error ? error.message : "获取商品详情失败")
   } finally {
     loading.value = false
@@ -117,20 +87,13 @@ const handleAddToCart = async (): Promise<void> => {
       return;
     }
 
-    console.log('发送添加购物车请求:', {
-      productId: productId,
-      quantity: quantity.value
-    });
+  
 
-    const response = await cartService.addToCart({
-      productId: productId,
-      quantity: quantity.value
-    });
-
-    console.log('添加购物车响应:', response);
+    
+   
     ElMessage.success('添加到购物车成功');
   } catch (error) {
-    console.error('添加到购物车失败:', error);
+   
     ElMessage.error(`添加到购物车失败：${error instanceof Error ? error.message : '未知错误'}`);
   }
 };
@@ -159,15 +122,11 @@ const handlePurchase = async () => {
       productName: product.value.name
     };
 
-    console.log('发送购买请求参数:', {
-      items: [orderItem]
-    });
-
+   
     const response = await orderService.purchaseDirectly({
       items: [orderItem]
     });
 
-    console.log('购买响应:', response);
 
     if (response.status === 200) {
       ElMessage.success('订单创建成功');
@@ -201,7 +160,7 @@ const goBack = (): void => {
   router.push({ name: 'Home' })
 }
 
-const headerRef = ref()
+
 
 const randomQuote = ref('')
 
@@ -222,17 +181,19 @@ const fetchReviews = async () => {
       productId,
       currentPage.value,
       pageSize.value
-    )
-    console.log('获取评论响应:', response);
-    if (response.data) {
-      reviews.value = response.data.list || [] // 修改为 data.list
-      total.value = response.data.total || 0
+    );
+  
+  
+    const typedResponse = (response as unknown) as ReviewResponse;
+    if (typedResponse.data) {
+      reviews.value = typedResponse.data.list || [];
+      total.value = typedResponse.data.total || 0;
     }
   } catch (error) {
-    console.error('获取评论失败:', error)
-    ElMessage.error('获取评论失败')
+    console.error('获取评论失败:', error);
+    ElMessage.error('获取评论失败');
   }
-}
+};
 
 // 添加评论
 const handleAddReview = async () => {
@@ -322,7 +283,7 @@ watch(activeTab, (newTab) => {
 // 计算平均评分
 const averageRating = computed(() => {
   if (!reviews.value?.length) return 0;
-  const sum = reviews.value.reduce((acc, review) => acc + review.rating, 0);
+  const sum = reviews.value.reduce((acc: number, review: Review) => acc + review.rating, 0);
   return Number((sum / reviews.value.length).toFixed(1));
 });
 </script>
@@ -349,18 +310,17 @@ const averageRating = computed(() => {
                 {{ randomQuote }}
               </span>
             </div>
-            <el-tag v-if="product?.stock > 0" type="success">有货</el-tag>
+            <el-tag v-if="(product?.stock ?? 0) > 0" type="success">有货</el-tag>
             <el-tag v-else type="danger">无货</el-tag>
           </div>
         </template>
       </el-page-header>
 
-      <!-- 使用 el-tabs 包裹所有 tab-pane -->
       <el-tabs v-model="activeTab" class="product-tabs">
-        <!-- 商品详情 tab -->
+   
         <el-tab-pane label="商品详情" name="details">
           <div v-if="product" class="main-content">
-            <!-- 左侧图片部分 -->
+      
             <div class="left-section">
               <el-image 
                 v-for="(image, index) in product.images" 
@@ -378,7 +338,7 @@ const averageRating = computed(() => {
               </el-image>
             </div>
 
-            <!-- 右侧信息部分 -->
+  
             <div class="right-section">
               <h1 class="product-title">{{ product.name }}</h1>
               <p class="product-price">¥{{ product.price }}</p>
@@ -507,7 +467,7 @@ const averageRating = computed(() => {
                     <div class="review-footer">
                       <span class="review-time">{{ formatDate(review.createdTime) }}</span>
                       <el-button
-                        v-if="userStore.userId === review.userId"
+                        v-if="userStore.userId && userStore.userId === review.userId"
                         type="danger"
                         link
                         @click="handleDeleteReview(review.reviewId)"

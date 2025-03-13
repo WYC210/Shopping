@@ -1,4 +1,4 @@
-// src/hooks/useCategories.ts
+
 import { serviceRegistry } from '@/api'
 export const useCategories = () => {
   const categoryService = serviceRegistry.category

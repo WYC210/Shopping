@@ -17,7 +17,7 @@ class FingerprintManager {
     return FingerprintManager.instance
   }
 
-  private async initializeFingerprint(): Promise<void> {
+  private async initializeFingerprint(): Promise<string> {
     if (!this.fpPromise) {
       this.fpPromise = new Promise(async (resolve) => {
         try {

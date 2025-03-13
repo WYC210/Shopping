@@ -1,11 +1,11 @@
-// src/types/store/product.ts
+
 import { defineStore } from 'pinia';
 import { productService } from '@/api/modules/product';
 import { errorHandler } from '@/utils/errorHandler';
 import type { Product as ApiProduct } from '@/types/api/product';
 
 
-// 扩展 Product 类型以包含额外属性
+
 interface Product extends ApiProduct {
   createTime?: string;
   sales?: number;
@@ -29,14 +29,8 @@ interface SortOption {
   order?: string;
 }
 
-// 或者在文件中直接定义 ProductData 接口
-interface ProductData {
-  product_id: string;
-  name: string;
-  price: number;
-  stock?: number;
-  [key: string]: any;
-}
+
+
 
 export const useProductStore = defineStore('product', {
   state: () => ({
@@ -77,9 +71,9 @@ export const useProductStore = defineStore('product', {
           product.name.toLowerCase().includes(state.filters.keyword.toLowerCase())
         );
       }
-      console.log("啦啦啦啊啦啦啦啦啦啦啦阿联");
+    
       
-      console.log(state.sort.field);
+  
       // 应用排序逻辑
       if (state.sort.field && state.sort.field !== 'default') {
         filtered.sort((a, b) => {
@@ -191,56 +185,5 @@ export const useProductStore = defineStore('product', {
       return this.fetchProducts();
     },
 
-    // 新增：上架商品
-    async createProduct(productData: Partial<Product>) {
-      this.loading = true;
-      try {
-       
-        
-        const response = await productService.createProduct(productData as unknown as ProductData);
-        await this.fetchProducts(); 
-        return response;
-      } catch (error: any) {
-        this.error = errorHandler.handleApiError(error).message;
-        throw error;
-      } finally {
-        this.loading = false;
-      }
-    },
-
-    // 新增：更新商品
-    async updateProduct(productId: string, productData: Partial<Product>) {
-      this.loading = true;
-      try {
-        const response = await productService.updateProduct(productId, productData);
-        if (this.currentProduct?.product_id === productId) {
-          this.currentProduct = response;
-        }
-        return response;
-      } catch (error: any) {
-        this.error = errorHandler.handleApiError(error).message;
-        throw error;
-      } finally {
-        this.loading = false;
-      }
-    },
-
-    // 新增：下架商品
-    async deactivateProduct(productId: string) {
-      this.loading = true;
-      try {
-        await productService.deactivateProduct(productId);
-        // 从本地列表中移除或更新状态
-        this.products = this.products.filter(p => p.product_id !== productId);
-        if (this.currentProduct?.product_id === productId) {
-          this.currentProduct.is_active = false; // 标记为下架
-        }
-      } catch (error: any) {
-        this.error = errorHandler.handleApiError(error).message;
-        throw error;
-      } finally {
-        this.loading = false;
-      }
-    }
   }
 });

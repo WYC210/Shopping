@@ -2,14 +2,13 @@
 import { ref, watch, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { productService } from '@/api/modules/product';
-import type { Product } from '@/types/api/product';
-import { getRandomQuote } from '@/constants/pageQuotes';
+import type { Product, ProductResponse } from '@/types/api/product';
 import { ElMessage } from 'element-plus';
 
 const route = useRoute();
 const products = ref<Product[]>([]);
 const loading = ref(false);
-const randomQuote = ref(getRandomQuote('product'));
+
 const keyword = ref('');
 const currentPage = ref(1);
 const pageSize = ref(10);
@@ -19,29 +18,27 @@ const total = ref(0);
 const fetchProducts = async () => {
   try {
     loading.value = true;
-    let response;
+    let response: ProductResponse;
     
     // 如果有关键词，执行搜索
     if (keyword.value) {
-      console.log('执行搜索请求，关键词:', keyword.value);
-      response = await productService.searchProducts({
+     
+      response = (await productService.searchProducts({
         keyword: keyword.value,
         page: currentPage.value,
         size: pageSize.value
-      });
+      }) as unknown) as ProductResponse;
     } else {
       // 如果没有关键词，获取全部商品
-      console.log('获取全部商品');
-      response = await productService.getAllProducts({
+   
+      response = (await productService.getAllProducts({
         page: currentPage.value,
         size: pageSize.value
-      });
+      }) as unknown) as ProductResponse;
     }
 
-    if (response.data) {
-      products.value = response.data.list || [];
-      total.value = response.data.total || 0;
-    }
+    products.value = response.list || [];
+    total.value = response.total || 0;
   } catch (error) {
     console.error('获取商品失败:', error);
     ElMessage.error('获取商品失败');
@@ -54,9 +51,9 @@ const fetchProducts = async () => {
 watch(
   () => route.query,
   (query) => {
-    const keyword = query.keyword as string;
-    if (keyword) {
-      this.keyword = keyword;
+    const newKeyword = query.keyword as string;
+    if (newKeyword) {
+      keyword.value = newKeyword;
       fetchProducts();
     }
   },
@@ -68,11 +65,8 @@ onMounted(() => {
   // 检查是否有任何查询参数
   const hasQueryParams = Object.keys(route.query).length > 0;
   if (!hasQueryParams) {
-    console.log('没有查询参数，获取所有商品');
     fetchProducts();
-  } else {
-    console.log('存在查询参数，跳过获取所有商品');
-  }
+  } 
 });
 </script>
 

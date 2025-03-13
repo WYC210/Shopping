@@ -60,23 +60,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from "vue";
-import { useBreakpoints } from "@vueuse/core";
+import { ref,  onMounted} from "vue";
+
 import type { Category } from "@/types/store/HomeType";
-import { useCategoryStore } from "@/types/store/category";
-import {
-  Monitor,
-  Iphone,
-  
-  Watch,
-  Camera,
-  Cpu,
-  Notebook,
-  Printer,
-  Box,
- 
-} from '@element-plus/icons-vue';
-import { ProductService } from "@/api/modules/product";
 import { useRouter } from "vue-router";
 import { categoryService } from "@/api/modules/category"
 import { Grid, FolderOpened } from '@element-plus/icons-vue';
@@ -84,20 +70,15 @@ import { Grid, FolderOpened } from '@element-plus/icons-vue';
 interface Props {
   contentHeight: string | number;
 }
-
-const props = defineProps<Props>();
+ defineProps<Props>();
 const emit = defineEmits<{
   (e: "category-change", category: Category): void;
 }>();
 
 // 使用 Pinia 状态管理
-const categoryStore = useCategoryStore();
 const categories = ref<Category[]>([]);  // 改为本地 ref 而不是 computed
 const loading = ref(false);
 const activeCategory = ref<Category | null>(null);
-const activeCollapse = ref<string[]>([]);
-const breakpoints = useBreakpoints({ mobile: 768 });
-const isMobileView = computed(() => breakpoints.smaller("mobile"));
 const activeIndex = ref('all');
 let hideTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -109,7 +90,6 @@ const fetchCategories = async () => {
   try {
     loading.value = true
     const response = await categoryService.getCategoryTree()
-    console.log('分类响应数据:', response)
     categories.value = response.data as Category[]
   } catch (error) {
     console.error('获取分类失败:', error)
@@ -128,18 +108,9 @@ const handleSubCategoryClick = (category: Category) => {
   emit('category-change', category);
 };
 
-// 鼠标进入分类
-const handleMouseEnter = (category: Category) => {
-  if (hideTimer) clearTimeout(hideTimer);
-  activeCategory.value = category;
-};
 
-// 菜单项离开
-const handleMenuItemLeave = () => {
-  hideTimer = setTimeout(() => {
-    activeCategory.value = null;
-  }, 200);
-};
+
+
 
 // 子菜单离开
 const handleSubmenuLeave = () => {
@@ -171,7 +142,7 @@ onMounted(() => {
   background: rgba(6, 5, 36, 0.95);
   backdrop-filter: blur(12px);
   border-radius: 0.75rem;
-  overflow: visible; /* 修改为 visible，允许子菜单溢出 */
+  overflow: visible; 
   padding: 1rem;
 }
 

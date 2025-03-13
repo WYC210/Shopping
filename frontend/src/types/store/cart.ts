@@ -1,14 +1,14 @@
-// src/types/store/cart.ts
+
 import { defineStore } from 'pinia';
 import { cartService } from '@/api/modules/cart';
 import { useCheckoutStore } from '@/types/store/checkout';
 import { useUserStore } from '@/types/store/user';
 import router from '@/router';
 import { ElMessage } from 'element-plus';
-import type { CartItem } from '@/types/api/cart';
 
-// 修改 CartResponse 接口以匹配实际的后端响应
-interface CartItem {
+
+
+interface CartItemState {
   cartItemId: string;
   cartId: string;
   productId: string;
@@ -25,6 +25,7 @@ interface CartItem {
   isPay: boolean | null;
   paidQuantity: number;
   availableQuantity: number | null;
+  selected: boolean;
 }
 
 // API 响应类型
@@ -34,15 +35,10 @@ interface ApiResponse<T> {
   message?: string;
 }
 
-interface CartResponse {
-  status: number;
-  message: string | null;
-  data: CartItem[];
-}
 
 export const useCartStore = defineStore('cart', {
   state: () => ({
-    cartItems: [] as CartItem[],
+    cartItems: [] as CartItemState[],
     totalCount: 0,
     loading: false,
     error: null as string | null,
@@ -65,17 +61,16 @@ export const useCartStore = defineStore('cart', {
   actions: {
     async fetchCartItems() {
       try {
-        // 直接获取数组响应
-        const response = await cartService.getCartItems() as CartItem[];
-        console.log('API 响应:', response);
+       
+        const response = (await cartService.getCartItems() as unknown) as CartItemState[];
+      
         
         if (Array.isArray(response)) {
-          // 添加选择状态到每个购物车项
           this.cartItems = response.map(item => ({
             ...item,
-            selected: false // 初始化选择状态
+            selected: false
           }));
-          console.log('处理后的购物车数据:', this.cartItems);
+          
         } else {
           console.warn('API 响应格式不正确:', response);
           this.cartItems = [];
@@ -92,7 +87,7 @@ export const useCartStore = defineStore('cart', {
         this.loading = true;
         await cartService.updateCartItem(id, quantity);
         // 更新本地状态
-        const item = this.cartItems.find(item => item.id === id);
+        const item = this.cartItems.find(item => item.cartId === id);
         if (item) {
           item.quantity = quantity;
         }
@@ -105,7 +100,7 @@ export const useCartStore = defineStore('cart', {
 
     async removeCartItem(itemId: string) {
       try {
-        const index = this.cartItems.findIndex(item => item.id === itemId);
+        const index = this.cartItems.findIndex(item => item.cartId === itemId);
         if (index !== -1) {
           this.cartItems.splice(index, 1);
           this.totalCount = this.cartItems.length;
@@ -116,7 +111,7 @@ export const useCartStore = defineStore('cart', {
       }
     },
 
-    updateSelection(items: CartItem[]) {
+    updateSelection(items: CartItemState[]) {
       this.cartItems = items;
     },
 
@@ -139,25 +134,30 @@ export const useCartStore = defineStore('cart', {
       this.loading = true;
       this.error = null;
       try {
-        console.log('发送添加到购物车请求:', cartData);
+      
         const response = await cartService.addToCart(cartData) as unknown as ApiResponse<any>;
-        console.log('添加购物车响应:', response);
+       
         
         if (response?.state === 200 && response?.data) {
           const item = response.data;
-          const newItem: CartItem = {
-            id: item.cartItemId,
+          const newItem: CartItemState = {
+            cartItemId: item.cartItemId,
             cartId: item.cartId,
             productId: item.productId,
             quantity: item.quantity,
             price: item.price,
-            name: item.productName,
+            productName: item.productName,
             imageUrl: item.imageUrl || '',
             selected: false,
             createdTime: item.createdTime,
             modifiedTime: item.modifiedTime,
             availableQuantity: item.availableQuantity,
-            paidQuantity: item.paidQuantity
+            paidQuantity: item.paidQuantity,
+            createdUser: item.createdUser || '',
+            modifiedUser: item.modifiedUser || null,
+            userId: item.userId || null,
+            orderStatus: item.orderStatus || null,
+            isPay: item.isPay || null
           };
           this.cartItems.push(newItem);
           this.totalCount = this.cartItems.length;
@@ -174,7 +174,7 @@ export const useCartStore = defineStore('cart', {
       }
     },
 
-    setCartItems(items: CartItem[]) {
+    setCartItems(items: CartItemState[]) {
       this.cartItems = items;
     },
 
@@ -182,7 +182,7 @@ export const useCartStore = defineStore('cart', {
     async prepareCheckout() {
       try {
         const selectedItems = this.cartItems.filter(item => item.selected);
-        console.log('选中的商品:', selectedItems);
+      
 
         if (selectedItems.length === 0) {
           throw new Error('请选择要结算的商品');
@@ -192,27 +192,33 @@ export const useCartStore = defineStore('cart', {
         ElMessage.info('正在处理结算请求...');
 
         const cartItemIds = selectedItems.map(item => item.cartItemId);
-        console.log('发送结算请求的商品ID:', cartItemIds);
         
         const response = await cartService.purchaseCart(cartItemIds);
         
-        console.log('结算响应:', response);
+       
         if (response.status === 200) {
           const { orderId, totalAmount } = response.data;
           
-          // 使用 checkout store 存储订单数据
+    
           const checkoutStore = useCheckoutStore();
           checkoutStore.setOrderData({
             orderId,
             totalAmount,
-            items: selectedItems,
+            items: selectedItems.map(item => ({
+              id: item.cartItemId,
+              name: item.productName,
+              productId: item.productId,
+              quantity: item.quantity,
+              price: item.price,
+              imageUrl: item.imageUrl
+            })),
             orderInfo: response.data
           });
 
           this.clearCheckedItems();
           ElMessage.success('结算成功，正在跳转到支付页面...');
           
-          // 修改为使用 query 参数进行跳转
+     
           router.push({
             path: '/payment',
             query: { 

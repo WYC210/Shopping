@@ -57,13 +57,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
 import type { OrderStatus } from '@/types/api/payment';
-import defaultImage from '@/assets/cs2.png';
+import defaultImage from '@/assets/logo_w.png';
 
 defineEmits(['pay-order', 'cancel-order']);
 
-const props = defineProps<{
+defineProps<{
   orders: Array<{
     orderId: string;
     status: OrderStatus;

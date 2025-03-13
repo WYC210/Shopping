@@ -1,4 +1,4 @@
-// src/types/api/category.type.ts
+
 export interface Category {
   id: string;
   name: string;

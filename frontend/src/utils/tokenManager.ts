@@ -1,7 +1,5 @@
 import router from '@/router';
 import { httpClient } from './request';
-import { fingerprintManager } from '@/utils/fingerprint';
-import type { AxiosRequestConfig, InternalAxiosRequestConfig } from 'axios';
 
 export class TokenManager {
   private accessToken: string | null;
@@ -14,10 +12,7 @@ export class TokenManager {
     // 从 localStorage 获取 tokens
     this.accessToken = localStorage.getItem('accessToken');
     this.refreshToken = localStorage.getItem('refreshToken');
-    console.log('TokenManager 初始化完成，当前 token:', {
-      accessToken: this.accessToken ? '存在' : '不存在',
-      refreshToken: this.refreshToken ? '存在' : '不存在'
-    });
+   
   }
 
   // 设置令牌
@@ -51,7 +46,7 @@ export class TokenManager {
     if (!this.accessToken) {
       this.accessToken = localStorage.getItem('accessToken');
     }
-    console.log('Getting access token:', this.accessToken);
+   
     return this.accessToken;
   }
 
@@ -60,7 +55,7 @@ export class TokenManager {
     if (!this.refreshToken) {
       this.refreshToken = localStorage.getItem('refreshToken');
     }
-    console.log('Getting refresh token:', this.refreshToken);
+   
     return this.refreshToken;
   }
 
@@ -85,7 +80,7 @@ export class TokenManager {
       router.push('/login');
     }
     
-    console.log('Tokens cleared');
+  
   }
 
   // 刷新访问令牌
@@ -167,6 +162,6 @@ export class TokenManager {
 }
 
 // 添加调试日志
-console.log('正在创建 tokenManager 实例...');
+
 export const tokenManager = new TokenManager();
-console.log('tokenManager 实例创建完成');
+

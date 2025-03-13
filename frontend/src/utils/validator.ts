@@ -1,4 +1,4 @@
-// src/utils/validator.ts
+
 interface ValidationResult {
   valid: boolean;
   message?: string;

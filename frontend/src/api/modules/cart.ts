@@ -2,7 +2,6 @@
 import { httpClient } from '@/utils/request';
 import { BaseApiService } from '@/api/modules/base';
 import type { AddCartItemParams, CartItem } from '@/types/api/cart';
-import type { AxiosError } from 'axios';
 import { useUserStore } from '@/types/store/user';
 import axios from 'axios';
 import { fingerprintManager } from '@/utils/fingerprint';
@@ -37,15 +36,7 @@ export class CartService extends BaseApiService<CartItem> {
     try {
       const userStore = useUserStore();
       
-      // 输出请求信息
-      console.log('发送获取购物车请求:', {
-        url: '/cart/list',
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${userStore.accessToken}`,
-          'Content-Type': 'application/json'
-        }
-      });
+  
 
       const response = await this.request<CartResponse>({
         method: 'GET',
@@ -55,20 +46,10 @@ export class CartService extends BaseApiService<CartItem> {
         }
       });
 
-      // 只输出存在的属性
-      console.log('获取购物车响应:', {
-        status: response.status,
-        data: response.data
-      });
-
+     
       return response.data as CartItem[];
     } catch (error) {
-      // 输出错误信息
-      console.error('获取购物车失败:', {
-        error: error as AxiosError,
-        config: (error as AxiosError).config,
-        response: (error as AxiosError).response
-      });
+    
       throw error;
     }
   }
@@ -78,34 +59,18 @@ export class CartService extends BaseApiService<CartItem> {
    */
   async addToCart(params: AddCartItemParams): Promise<CartItemResponse> {
     try {
-      // 输出请求信息
-      console.log('发送添加购物车请求:', {
-        url: '/cart/add',
-        method: 'POST',
-        data: params,
-        headers: this.httpClient.defaults.headers
-      });
-
+    
       const response = await this.request<CartResponse>({
         method: 'POST',
         url: '/add',
         data: params
       });
 
-      // 只输出存在的属性
-      console.log('添加购物车响应:', {
-        status: response.status,
-        data: response.data
-      });
+   
 
       return response.data as CartItemResponse;
     } catch (error) {
-      // 输出错误信息
-      console.error('添加到购物车失败:', {
-        error: error as AxiosError,
-        config: (error as AxiosError).config,
-        response: (error as AxiosError).response
-      });
+    
       throw error;
     }
   }
@@ -183,10 +148,7 @@ export class CartService extends BaseApiService<CartItem> {
     }
   }
 
-  // 辅助方法：构建完整URL
-  private getUrl(path: string): string {
-    return `${this.baseUrl}${path}`;
-  }
+ 
 }
 
 export const cartService = new CartService();

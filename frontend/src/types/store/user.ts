@@ -1,8 +1,5 @@
-// src/types/store/user.ts
-import { defineStore } from 'pinia';
 
-import router from '@/router';
-import { ElMessage } from 'element-plus';
+import { defineStore } from 'pinia';
 import { tokenManager } from '@/utils/tokenManager';
 import { httpClient } from '@/utils/request';
 
@@ -11,7 +8,7 @@ interface UserInfo {
   username: string;
   email?: string;
   avatar?: string;
-  // 其他用户信息字段
+
 }
 
 interface LoginCredentials {
@@ -19,11 +16,12 @@ interface LoginCredentials {
   password: string;
 }
 
-interface UserState {
+export interface UserState {
   isLoggedIn: boolean;
   accessToken: string | null;
   refreshToken: string | null;
-  userInfo: any | null;
+  userId: string;
+  userInfo: any;
 }
 
 export const useUserStore = defineStore('user', {
@@ -31,6 +29,7 @@ export const useUserStore = defineStore('user', {
     isLoggedIn: !!localStorage.getItem('accessToken'),
     accessToken: localStorage.getItem('accessToken'),
     refreshToken: localStorage.getItem('refreshToken'),
+    userId: '',
     userInfo: null
   }),
 
@@ -56,7 +55,7 @@ export const useUserStore = defineStore('user', {
 
     async login(credentials: LoginCredentials) {
       try {
-        console.log('Attempting login with credentials:', credentials);
+       
         const response = await httpClient.post('/users/login', credentials);
         
         if (response.data?.status === 200) {
@@ -75,7 +74,7 @@ export const useUserStore = defineStore('user', {
           this.refreshToken = refreshToken;
           this.setUserInfo(userInfo);
           
-          console.log('Login successful');
+        
           return response.data;
         }
         
@@ -137,7 +136,7 @@ export const useUserStore = defineStore('user', {
 
     async refreshAccessToken() {
       try {
-        console.log('开始刷新 token, 当前 refreshToken:', this.refreshToken);
+      
         
         const response = await fetch('http://localhost:8088/users/refresh', {
           method: 'POST',
@@ -150,9 +149,9 @@ export const useUserStore = defineStore('user', {
           })
         });
 
-        console.log('刷新 token 响应状态:', response);
+   
         const data = await response.json();
-        console.log('刷新 token 响应数据:', data);
+     
         
         if (response.ok && data.status === 200) {
           if (!data.data) {
@@ -160,13 +159,12 @@ export const useUserStore = defineStore('user', {
             throw new Error('Invalid token response');
           }
 
-          console.log('获取新的 access token:', data.data);
-
+      
           // 更新访问 token
           this.accessToken = data.data;
           localStorage.setItem('accessToken', data.data);
           
-          console.log('access token 刷新成功，已更新本地存储');
+        
           return true;
         }
         

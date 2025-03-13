@@ -1,4 +1,4 @@
-// src/utils/auth.ts
+
 import { httpClient } from '@/utils/request';
 import type { LoginParams, RegisterParams, Tokens, UserInfo } from '@/types/api/auth';
 import router from '@/router';

@@ -29,11 +29,11 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { Top, Moon, ShoppingCart, User, House } from '@element-plus/icons-vue';
+import { Top,  ShoppingCart, User, House } from '@element-plus/icons-vue';
 import { useUserStore } from '@/types/store/user';
 
 const router = useRouter();
-const userStore = useUserStore();
+
 const isExpanded = ref(false);
 
 // 定义径向展开的半径（单位：px）
@@ -56,7 +56,7 @@ const handleAction = (action: string) => {
       window.scrollTo({ top: 0, behavior: 'smooth' });
       break;
       case 'goToHome':
-      router.push('/'); // 返回首页
+      router.push('/'); 
       break;
     case 'goToCart':
       router.push('/cart');

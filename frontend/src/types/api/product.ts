@@ -1,18 +1,23 @@
 import type { Category } from '@/types/store/HomeType';
 
 export interface Product {
-  productId: number;
+  productId: string;
   name: string;
   price: number;
   description?: string;
-  category?: string;
-  imageUrl?: string;
+  category: string;
+  imageUrl: string;
   sales?: number;
   createTime?: string;
-  stock?: number;
+  stock: number;
+  status: number;
+  rating: number;
+  reviewCount: number;
+  tags: string;
 }
 
 export interface ProductResponse {
+  data: Product[];
   list: Product[];
   total: number;
   pageNum: number;
@@ -40,4 +45,12 @@ export interface PaginationResult<T> {
 
 export interface CategoryResponse {
   categories: Category[];
+}
+
+export interface ProductDetail extends Product {
+  stock: number;
+  brand?: string;
+  categoryId?: string;
+  description?: string;
+  images?: string[];
 }

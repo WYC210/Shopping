@@ -1,4 +1,4 @@
-<!-- src/views/Home/components/ProductCard.vue -->
+
 <template>
   <el-card 
     class="product-card" 
@@ -55,7 +55,7 @@
 import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 import type { Product } from '@/types/api/product';
-import errorImage from '@/assets/cs.png';
+import errorImage from '@/assets/logo_w.png';
 
 const props = defineProps<{
   product: Product

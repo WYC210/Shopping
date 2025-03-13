@@ -1,4 +1,4 @@
-// src/types/api/order.type.ts
+
 export interface OrderResponse {
   status: number;
   data: Order;
@@ -11,6 +11,7 @@ export interface Order {
   status: string;
   items: OrderItem[];
   userId: string;
+  createdTime: string;
 }
 
 export interface OrderItem {

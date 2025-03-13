@@ -1,4 +1,4 @@
-<!-- views/Home/HomeView.vue -->
+
 <template>
   <el-container class="home-container">
     <!-- 头部 -->
@@ -67,8 +67,6 @@ const isLoading = ref(false);
 const featuredProducts = ref<Product[]>([]);
 const currentPage = ref(1);
 const pageSize = ref(10);
-
-const contentHeight = ref("400px");
 const viewMode = ref<"grid" | "list">("grid");
 
 // 筛选参数
@@ -90,16 +88,9 @@ const handleCategoryChange = (category: Category) => {
   filterParams.categoryId = category.id || null;
 };
 
-const handleFilterChange = (filters: Partial<FilterParams>) => {
-  Object.assign(filterParams, filters);
-};
 
 const handleSortChange = (field: string) => {
   sortParams.field = field;
-};
-
-const handleViewChange = (mode: "grid" | "list") => {
-  viewMode.value = mode;
 };
 
 const goToProductList = () => {
@@ -110,17 +101,13 @@ const goToProductList = () => {
 const fetchProducts = async () => {
   try {
     isLoading.value = true;
-    console.log('开始获取商品列表, 参数:', {
-      page: currentPage.value,
-      size: pageSize.value
-    });
+  
 
     const response = await productService.getProducts({
       page: currentPage.value,
       size: pageSize.value
     });
 
-    console.log('获取商品列表成功:', response);
     featuredProducts.value = response.list;
   } catch (error) {
     console.error('获取商品列表失败:', error);
@@ -133,12 +120,10 @@ const fetchProducts = async () => {
 const checkAuthStatus = async () => {
   try {
     if (userStore.isLoggedIn) {
-      console.log('检查登录状态和尝试续签...');
+     
       const isValid = await userStore.refreshAccessToken();
-      console.log('Token 续签结果:', isValid);
-      
+     
       if (!isValid) {
-        console.log('Token 续签失败，清除登录状态');
         await userStore.logout();
       }
     }
@@ -153,7 +138,6 @@ const checkAuthStatus = async () => {
 };
 
 onMounted(async () => {
-  console.log("首页组件已加载");
   try {
     await checkAuthStatus();
   } catch (error) {

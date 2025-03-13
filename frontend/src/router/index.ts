@@ -78,15 +78,7 @@ const router = createRouter({
     bgEffect: 'stars'
   }
 },
-    {
-      path: '/manage-products',
-      name: 'ManageProducts',
-      component: () => import('@/views/Product/ManageProductView.vue'),
-      meta: {
-        requiresAuth: true,
-        requiresAdmin: true // 如果需要管理员权限
-      }
-    },
+   
     {
       path: '/search',
       name: 'SearchResult',

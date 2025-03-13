@@ -1,4 +1,4 @@
-// src/types/store/category.ts
+
 import { defineStore } from 'pinia';
 import { serviceRegistry } from '@/api/';
 
@@ -7,7 +7,14 @@ interface Category {
   name: string;
   parentId?: string;
   children?: Category[];
-  // 添加其他必要的字段
+
+}
+
+
+interface CategoryTreeResponse {
+  id: string;
+  name: string;
+  parentId?: string;
 }
 
 export const useCategoryStore = defineStore('category', {
@@ -38,12 +45,12 @@ export const useCategoryStore = defineStore('category', {
       this.loading = true;
       const categoryService = serviceRegistry.category;
       try {
-        const categoryTrees = await categoryService.getCategoryTree();
-        // 转换为 Category 类型
-        this.categories = categoryTrees.map(tree => ({
+        const response = await categoryService.getCategoryTree();
+      
+        this.categories = (response.data as CategoryTreeResponse[]).map(tree => ({
           id: tree.id,
           name: tree.name,
-          parentId: tree.parentId || undefined
+          parentId: tree.parentId
         }));
         return this.categories;
       } catch (error: any) {

@@ -1,4 +1,4 @@
-// src/types/api/comment.ts
+
 export interface Comment {
   id: string;
   content: string;
@@ -18,7 +18,7 @@ export interface CommentStats {
   totalComments: number;
 }
 
-// src/types/api/common.ts
+
 export interface PaginationParams {
   page?: number;   // 当前页码，默认为1
   size?: number;   // 每页数量，默认为10
