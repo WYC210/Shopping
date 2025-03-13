@@ -6,11 +6,12 @@ import java.time.LocalDateTime;
 
 @Data
 public class ProductReview {
-    private Long productId;
-    private String name;
-    private BigDecimal price;
-    private String description;
+    private String reviewId;
+    private String productId;
+    private String userId;
+    private String content;
     private BigDecimal rating;
     private Integer reviewCount;
     private LocalDateTime createdTime;
+    private LocalDateTime modifiedTime;
 }

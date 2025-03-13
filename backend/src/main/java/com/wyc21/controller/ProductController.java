@@ -26,6 +26,8 @@ import java.util.stream.Collectors;
 import com.wyc21.mapper.ProductMapper;
 import com.wyc21.service.ex.ProductNotFoundException;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 @RestController
 @RequestMapping("/products")
 public class ProductController extends BaseController {
@@ -46,8 +48,6 @@ public class ProductController extends BaseController {
 
     @Autowired
     private ObjectMapper objectMapper;
-
-    
 
     private static final String BROWSE_HISTORY_KEY = "browse:history:";
 
@@ -73,7 +73,7 @@ public class ProductController extends BaseController {
         if (fingerprint != null) {
             String key = BROWSE_HISTORY_KEY + fingerprint;
             double score = System.currentTimeMillis();
-            
+
             // 存储商品信息到Redis
             Map<String, String> productInfo = new HashMap<>();
             productInfo.put("id", String.valueOf(id));
@@ -81,7 +81,7 @@ public class ProductController extends BaseController {
             productInfo.put("price", String.valueOf(product.getPrice()));
             productInfo.put("imageUrl", product.getImageUrl());
             productInfo.put("description", product.getDescription());
-            
+
             // 将商品信息转换为JSON字符串
             try {
                 String value = objectMapper.writeValueAsString(productInfo);
@@ -124,10 +124,11 @@ public class ProductController extends BaseController {
     }
 
     @GetMapping("/{productId}/reviews")
-    public JsonResult<List<ProductReview>> getProductReviews(
-            @PathVariable Long productId,
-            @RequestParam(defaultValue = "5") int limit) {
-        List<ProductReview> reviews = productService.getProductReviews(productId, limit);
+    public JsonResult<PageResult<ProductReview>> getProductReviews(
+            @PathVariable String productId,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        PageResult<ProductReview> reviews = productService.getProductReviews(productId, page, size);
         return new JsonResult<>(OK, reviews);
     }
 
@@ -147,6 +148,10 @@ public class ProductController extends BaseController {
     // 上架商品
     @PostMapping("/create")
     public ResponseEntity<?> createProduct(@RequestBody Product product) {
+        // 输出接收到的商品信息到控制台
+        log.info("接收到的商品信息: {}", product);
+
+        // 调用服务层方法创建商品
         productService.createProduct(product);
         return ResponseEntity.ok("商品上架成功");
     }
@@ -178,5 +183,41 @@ public class ProductController extends BaseController {
         } catch (java.io.UnsupportedEncodingException e) {
             return ResponseEntity.badRequest().build();
         }
+    }
+
+    @GetMapping("/my/products")
+    public JsonResult<List<Product>> getMyProducts(HttpServletRequest request) {
+        String userId = null;
+        if (request.getAttribute("uid") != null) {
+            userId = request.getAttribute("uid").toString(); // 获取当前用户ID
+        } else {
+            return new JsonResult<>(400, null, "用户未登录"); // 返回错误响应
+        }
+
+        List<Product> products = productService.getProductsByUserId(userId); // 调用服务层方法
+        return new JsonResult<>(OK, products);
+    }
+
+    // 添加评论
+    @PostMapping("/{productId}/reviews")
+    public JsonResult<Void> addReview(
+            @PathVariable String productId,
+            @RequestBody ProductReview review,
+            HttpServletRequest request) {
+        String userId = request.getAttribute("uid").toString();
+        review.setUserId(userId);
+        review.setProductId(productId);
+        productService.addReview(review);
+        return new JsonResult<>(OK);
+    }
+
+    // 删除评论
+    @DeleteMapping("/reviews/{reviewId}")
+    public JsonResult<Void> deleteReview(
+            @PathVariable String reviewId,
+            HttpServletRequest request) {
+        String userId = request.getAttribute("uid").toString();
+        productService.deleteReview(reviewId, userId);
+        return new JsonResult<>(OK);
     }
 }

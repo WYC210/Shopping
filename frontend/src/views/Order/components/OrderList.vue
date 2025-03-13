@@ -97,7 +97,7 @@ const formatTime = (time: string) => {
 };
 
 const formatPrice = (price: number) => {
-  return (price / 100).toFixed(2);
+  return (price ).toFixed(2);
 };
 
 const getTotalItems = (items: any[]) => {

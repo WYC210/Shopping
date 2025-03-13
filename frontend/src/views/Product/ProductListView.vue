@@ -4,33 +4,47 @@ import { useRoute } from 'vue-router';
 import { productService } from '@/api/modules/product';
 import type { Product } from '@/types/api/product';
 import { getRandomQuote } from '@/constants/pageQuotes';
+import { ElMessage } from 'element-plus';
 
 const route = useRoute();
 const products = ref<Product[]>([]);
 const loading = ref(false);
 const randomQuote = ref(getRandomQuote('product'));
+const keyword = ref('');
+const currentPage = ref(1);
+const pageSize = ref(10);
+const total = ref(0);
 
 // 获取商品列表的方法
-const fetchProducts = async (keyword?: string) => {
-  loading.value = true;
+const fetchProducts = async () => {
   try {
+    loading.value = true;
     let response;
-    if (keyword) {
-      // 如果有关键词，执行搜索
-      console.log('执行搜索请求，关键词:', keyword);
-      response = await productService.searchProducts(keyword);
+    
+    // 如果有关键词，执行搜索
+    if (keyword.value) {
+      console.log('执行搜索请求，关键词:', keyword.value);
+      response = await productService.searchProducts({
+        keyword: keyword.value,
+        page: currentPage.value,
+        size: pageSize.value
+      });
     } else {
       // 如果没有关键词，获取全部商品
       console.log('获取全部商品');
-      response = await productService.getProducts({
-        page: 1,
-        size: 10
+      response = await productService.getAllProducts({
+        page: currentPage.value,
+        size: pageSize.value
       });
     }
-    console.log('获取到的商品数据:', response);
-    products.value = response.list;
+
+    if (response.data) {
+      products.value = response.data.list || [];
+      total.value = response.data.total || 0;
+    }
   } catch (error) {
     console.error('获取商品失败:', error);
+    ElMessage.error('获取商品失败');
   } finally {
     loading.value = false;
   }
@@ -42,7 +56,8 @@ watch(
   (query) => {
     const keyword = query.keyword as string;
     if (keyword) {
-      fetchProducts(keyword);
+      this.keyword = keyword;
+      fetchProducts();
     }
   },
   { immediate: true }

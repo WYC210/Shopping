@@ -29,7 +29,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { Top, Moon, ShoppingCart, User } from '@element-plus/icons-vue';
+import { Top, Moon, ShoppingCart, User, House } from '@element-plus/icons-vue';
 import { useUserStore } from '@/types/store/user';
 
 const router = useRouter();
@@ -41,7 +41,7 @@ const radius = 80;
 
 const menuItems = [
   { name: 'backToTop', icon: Top, action: 'scrollTop' },
-  { name: 'darkMode', icon: Moon, action: 'toggleTheme' },
+  { name: 'darkMode', icon: House, action: 'goToHome' },
   { name: 'cart', icon: ShoppingCart, action: 'goToCart' },
   { name: 'profile', icon: User, action: 'goToProfile' }
 ];
@@ -55,8 +55,8 @@ const handleAction = (action: string) => {
     case 'scrollTop':
       window.scrollTo({ top: 0, behavior: 'smooth' });
       break;
-    case 'toggleTheme':
-      document.documentElement.classList.toggle('dark');
+      case 'goToHome':
+      router.push('/'); // 返回首页
       break;
     case 'goToCart':
       router.push('/cart');
@@ -93,8 +93,8 @@ const getButtonStyle = (index: number) => {
 <style scoped>
 .floating-action-wrapper {
   position: fixed;
-  bottom: 30px;
-  right: 30px;
+  bottom: 100px;
+  right: 100px;
   z-index: 9999;
 }
 

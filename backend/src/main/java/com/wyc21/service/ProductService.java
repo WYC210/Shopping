@@ -13,9 +13,8 @@ public interface ProductService {
     Product getProduct(String productId);
 
     // 获取商品评论
-    List<ProductReview> getProductReviews(Long productId, int limit);
+    List<ProductReview> getProductReviews(String productId, int limit);
 
-   
     void createProduct(Product product);
 
     // 更新商品信息
@@ -25,4 +24,15 @@ public interface ProductService {
     void deactivateProduct(String productId);
 
     PageResult<Product> searchProducts(String keyword, int page, int size);
+
+    List<Product> getProductsByUserId(String userId);
+
+    // 获取商品评论（分页）
+    PageResult<ProductReview> getProductReviews(String productId, int page, int size);
+
+    // 添加评论
+    void addReview(ProductReview review);
+
+    // 删除评论
+    void deleteReview(String reviewId, String userId);
 }

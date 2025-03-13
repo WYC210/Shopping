@@ -8,6 +8,5 @@ public class Cart extends BaseEntity {
     private String cartId;
     private String userId;
     private Integer isCheckedOut;
-    private String createdUser;
-    private LocalDateTime createdTime;
+   
 }

@@ -112,16 +112,20 @@
     </select>
 
     <select id="findReviewsByProductId" resultType="com.wyc21.entity.ProductReview">
-        SELECT 
-            product_id,
-            name,
-            rating,
-            review_count,
-            description,
-            created_time
-        FROM wz_products 
+        SELECT r.*, u.username as userName
+        FROM wz_reviews r
+        LEFT JOIN wz_users u ON r.user_id = u.uid
+        WHERE r.product_id = #{productId}
+        AND r.is_deleted = 0
+        ORDER BY r.created_time DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="countReviewsByProductId" resultType="int">
+        SELECT COUNT(*)
+        FROM wz_reviews
         WHERE product_id = #{productId}
-        LIMIT #{limit}
+        AND is_deleted = 0
     </select>
 
     <delete id="deleteProduct" parameterType= "com.wyc21.entity.Product">
@@ -183,6 +187,20 @@
     )
 </insert>
 
+<select id="findCategoryByName" parameterType="String" resultType="com.wyc21.entity.Category">
+    SELECT * FROM wz_categories WHERE name = #{name}
+</select>
+
+<insert id="insertCategory" parameterType="com.wyc21.entity.Category">
+    INSERT INTO wz_categories (
+        category_id, name, parent_id, level, sort_order, 
+        is_active, created_time, modified_time
+    ) VALUES (
+        #{categoryId}, #{name}, #{parentId}, #{level}, #{sortOrder}, 
+        1, #{createdTime}, #{modifiedTime}
+    )
+</insert>
+
 <!-- 更新商品（动态更新非空字段） -->
 <update id="updateProduct" parameterType="com.wyc21.entity.Product">
     UPDATE wz_products
@@ -233,4 +251,28 @@
         OR tags LIKE CONCAT('%', #{keyword}, '%')
     )
 </select>
+
+<select id="findProductsByUserId" resultType="com.wyc21.entity.Product">
+    SELECT * FROM wz_products 
+    WHERE created_user = #{userId} AND is_active = 1
+    ORDER BY created_time DESC
+</select>
+
+<insert id="insertReview" parameterType="com.wyc21.entity.ProductReview">
+    INSERT INTO wz_reviews (
+        review_id, product_id, user_id, content, 
+        rating, created_time, modified_time
+    ) VALUES (
+        #{reviewId}, #{productId}, #{userId}, #{content},
+        #{rating}, #{createdTime}, #{modifiedTime}
+    )
+</insert>
+
+<update id="deleteReview">
+    UPDATE wz_reviews
+    SET is_deleted = 1,
+        modified_time = #{modifiedTime}
+    WHERE review_id = #{reviewId}
+    AND user_id = #{userId}
+</update>
 </mapper> 

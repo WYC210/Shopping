@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS wz_categories (
     is_active BOOLEAN DEFAULT TRUE,
     created_user VARCHAR(50) NOT NULL DEFAULT 'system',
     created_time DATETIME NOT NULL,
-    modify_time DATETIME NOT NULL
+    modified_time DATETIME NOT NULL
 );  
 
 
@@ -268,4 +268,17 @@ CREATE TABLE IF NOT EXISTS wz_order_items_archive (
     archived_time DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (order_id) REFERENCES wz_orders_archive(order_id),
     FOREIGN KEY (product_id) REFERENCES wz_products_archive(product_id)
+);
+-- 商品评论表
+CREATE TABLE IF NOT EXISTS wz_reviews (
+    review_id VARCHAR(32) PRIMARY KEY,
+    product_id VARCHAR(32) NOT NULL,
+    user_id VARCHAR(32) NOT NULL,
+    content TEXT NOT NULL,
+    rating DECIMAL(2,1) NOT NULL,
+    created_time DATETIME NOT NULL,
+    modified_time DATETIME NOT NULL,
+    is_deleted INT DEFAULT 0,
+    FOREIGN KEY (product_id) REFERENCES wz_products(product_id),
+    FOREIGN KEY (user_id) REFERENCES wz_users(uid)
 );

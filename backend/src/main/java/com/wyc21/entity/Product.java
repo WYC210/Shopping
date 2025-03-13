@@ -17,13 +17,13 @@ public class Product extends BaseEntity {
     private BigDecimal rating;
     private Integer reviewCount;
     private Integer isActive;
-    private String createdUser; // 创建者
-    private LocalDateTime createdTime; // 创建时间
-    private String modifiedUser; // 修改者
-    private LocalDateTime modifiedTime; // 修改时间
+   
+   
     private String categoryId; // 改为String类型
 
     public void setIsActive(Integer isActive) {
         this.isActive = isActive;
     }
+
+    
 }

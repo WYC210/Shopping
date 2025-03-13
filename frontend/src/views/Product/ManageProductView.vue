@@ -4,6 +4,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { productService } from '@/api/modules/product'
 import type { Product } from '@/types/api/product'
 import HomeHeader from '@/views/Home/components/HomeHeader.vue'
+import { Plus } from '@element-plus/icons-vue'
 
 // 商品列表数据
 const products = ref<Product[]>([])
@@ -43,14 +44,38 @@ const rules = {
   ]
 }
 
-// 获取商品列表
+// 添加分类相关的响应式变量
+const categoryInput = ref('')
+const categories = ref<string[]>([]) // 存储已添加的分类
+
+// 获取我的商品列表
 const fetchProducts = async () => {
   loading.value = true
   try {
-    const response = await productService.getProducts()
-    products.value = response.list
+    const response = await productService.getMyProducts({
+      page: 1,
+      size: 10 // 传递分页参数
+    }, {
+      'X-Device-Fingerprint': 'your-fingerprint-value', // 可选，用户的浏览器指纹
+      'Authorization': 'Bearer your-access-token' // 可选，用户的身份验证令牌
+    });
+    console.log('发送请求: 获取我的商品列表', {
+      url: '/products/my/products',
+      method: 'GET',
+      params: {
+        page: 1,
+        size: 10
+      },
+      headers: {
+        'X-Device-Fingerprint': 'your-fingerprint-value',
+        'Authorization': 'Bearer your-access-token'
+      },
+      response
+    });
+    products.value = response.data; // 更新为 response.data
   } catch (error) {
-    ElMessage.error('获取商品列表失败')
+    console.error('获取我的商品列表失败:', error);
+    ElMessage.error('获取我的商品列表失败')
   } finally {
     loading.value = false
   }
@@ -81,27 +106,82 @@ const openDialog = (type: 'add' | 'edit', product?: Product) => {
 // 提交表单
 const handleSubmit = async () => {
   try {
-    if (isEdit.value) {
-      await productService.updateProduct(productForm.value.productId, productForm.value)
-      ElMessage.success('更新成功')
-    } else {
-      await productService.createProduct(productForm.value)
-      ElMessage.success('添加成功')
+    const submitData: any = {
+      name: productForm.value.name,
+      price: productForm.value.price,
+      description: productForm.value.description,
+      stock: productForm.value.stock,
+      categoryId: categories.value.join(',') // 确保将分类数组转换为字符串
     }
-    dialogVisible.value = false
-    fetchProducts()
+
+    // 仅在 imageUrl 存在时才添加到 submitData
+    if (productForm.value.imageUrl) {
+      submitData.imageUrl = productForm.value.imageUrl;
+    }
+
+    console.log('请求体:', submitData); // 输出请求体以便调试
+
+    let response;
+    if (isEdit.value) {
+      response = await productService.updateProduct({
+        id: productForm.value.productId,
+        ...submitData
+      });
+      console.log('发送请求: 更新商品', {
+        url: '/products/update',
+        method: 'PUT',
+        data: submitData,
+        response
+      });
+      ElMessage.success('更新成功');
+    } else {
+      response = await productService.createProduct(submitData);
+      console.log('发送请求: 创建商品', {
+        url: '/products/create',
+        method: 'POST',
+        data: submitData,
+        response
+      });
+      ElMessage.success('添加成功');
+
+      // 将新创建的商品添加到产品列表中
+      products.value.push({
+        ...response.data, // 假设后端返回的商品数据在 response.data 中
+        category: categories.value.join(',') // 确保分类信息也被添加
+      });
+    }
+    
+    dialogVisible.value = false;
+    fetchProducts(); // 重新获取商品列表
   } catch (error) {
-    ElMessage.error(isEdit.value ? '更新失败' : '添加失败')
+    console.error('提交表单失败:', error);
+    ElMessage.error(isEdit.value ? '更新失败' : '添加失败');
   }
 }
 
 // 更新商品状态
 const updateStatus = async (product: Product) => {
   try {
-    await productService.updateProductStatus(product.productId, product.status === 1 ? 0 : 1)
-    ElMessage.success('状态更新成功')
+    if (product.status === 1) {
+      const response = await productService.deactivateProduct(product.productId);
+      console.log('发送请求: 下架商品', {
+        url: `/products/deactivate/${product.productId}`,
+        method: 'PUT',
+        response
+      });
+      ElMessage.success('商品已下架')
+    } else {
+      const response = await productService.activateProduct(product.productId);
+      console.log('发送请求: 上架商品', {
+        url: `/products/activate/${product.productId}`,
+        method: 'PUT',
+        response
+      });
+      ElMessage.success('商品已上架')
+    }
     fetchProducts()
   } catch (error) {
+    console.error('更新商品状态失败:', error);
     ElMessage.error('状态更新失败')
   }
 }
@@ -115,12 +195,39 @@ const handleDelete = async (productId: string) => {
       type: 'warning'
     })
     
-    await productService.deleteProduct(productId)
+    const response = await productService.deleteProduct(productId);
+    console.log('发送请求: 删除商品', {
+      url: `/products/${productId}`,
+      method: 'DELETE',
+      response
+    });
     ElMessage.success('删除成功')
     fetchProducts()
   } catch (error) {
     if (error !== 'cancel') {
+      console.error('删除商品失败:', error);
       ElMessage.error('删除失败')
+    }
+  }
+}
+
+// 添加分类的方法
+const handleAddCategory = () => {
+  const category = categoryInput.value.trim()
+  if (category && !categories.value.includes(category)) {
+    categories.value.push(category)
+    productForm.value.category = category // 更新表单的分类
+    categoryInput.value = '' // 清空输入框
+  }
+}
+
+// 删除分类的方法
+const handleRemoveCategory = (category: string) => {
+  const index = categories.value.indexOf(category)
+  if (index > -1) {
+    categories.value.splice(index, 1)
+    if (productForm.value.category === category) {
+      productForm.value.category = '' // 如果删除的是当前选中的分类，清空表单的分类
     }
   }
 }
@@ -234,10 +341,36 @@ onMounted(() => {
           </el-form-item>
           
           <el-form-item label="商品分类" prop="category">
-            <el-select v-model="productForm.category">
-              <el-option label="分类1" value="category1" />
-              <el-option label="分类2" value="category2" />
-            </el-select>
+            <div class="category-input">
+              <el-input
+                v-model="categoryInput"
+                placeholder="输入分类名称后回车添加"
+                @keyup.enter="handleAddCategory"
+                class="category-input__inner"
+              >
+                <template #append>
+                  <el-button :icon="Plus" @click="handleAddCategory">
+                    添加分类
+                  </el-button>
+                </template>
+              </el-input>
+            </div>
+            <div class="category-tags">
+              <el-tag
+                v-for="category in categories"
+                :key="category"
+                :type="productForm.category === category ? 'success' : 'info'"
+                class="category-tag"
+                closable
+                @click="productForm.category = category"
+                @close="handleRemoveCategory(category)"
+              >
+                {{ category }}
+              </el-tag>
+              <div v-if="categories.length === 0" class="no-category">
+                暂无分类，请添加
+              </div>
+            </div>
           </el-form-item>
           
           <el-form-item label="商品描述">
@@ -430,6 +563,56 @@ onMounted(() => {
   
   .el-button-group {
     flex-direction: column;
+  }
+}
+
+.category-input {
+  margin-bottom: 10px;
+}
+
+.category-input__inner {
+  width: 100%;
+}
+
+.category-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 32px;
+  padding: 4px 0;
+}
+
+.category-tag {
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.category-tag:hover {
+  transform: translateY(-2px);
+}
+
+.no-category {
+  color: var(--el-text-color-secondary);
+  font-size: 14px;
+}
+
+:deep(.el-tag) {
+  background-color: rgba(36, 208, 254, 0.1);
+  border-color: rgba(36, 208, 254, 0.2);
+  color: #24d0fe;
+}
+
+:deep(.el-tag.el-tag--success) {
+  background-color: rgba(103, 194, 58, 0.1);
+  border-color: rgba(103, 194, 58, 0.2);
+  color: #67c23a;
+}
+
+:deep(.el-tag .el-tag__close) {
+  color: currentColor;
+  &:hover {
+    background-color: currentColor;
+    color: var(--el-color-white);
   }
 }
 </style> 

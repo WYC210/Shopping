@@ -16,9 +16,7 @@ public class Order extends BaseEntity {
     private LocalDateTime payTime; // 支付时间
     private String paymentId; // 支付流水号
     private Integer version; // 版本号，用于乐观锁
-    private String createdUser; // 创建者
-    private String modifiedUser;
-    private LocalDateTime modifiedTime;
+ 
     private List<OrderItem> items;
     private Boolean isDelete = false; // 默认为false，表示未删除
 }

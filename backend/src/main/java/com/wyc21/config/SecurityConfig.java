@@ -14,6 +14,8 @@ import java.util.Arrays;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import com.wyc21.security.JwtAuthenticationFilter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Configuration
 @EnableWebSecurity
@@ -21,6 +23,8 @@ public class SecurityConfig {
 
         @Autowired
         private JwtAuthenticationFilter jwtAuthenticationFilter;
+
+        private static final Logger log = LoggerFactory.getLogger(SecurityConfig.class);
 
         @Bean
         public BCryptPasswordEncoder passwordEncoder() {
@@ -35,10 +39,11 @@ public class SecurityConfig {
                                         CorsConfiguration config = new CorsConfiguration();
                                         config.setAllowedOrigins(
                                                         Arrays.asList("http://localhost:8080",
-                                                                        "http://192.168.0.106:8080,http://localhost:5173"));
+                                                                        "http://192.168.0.106:8080",
+                                                                        "http://localhost:5173"));
 
                                         config.setAllowedMethods(
-                                                        Arrays.asList("GET", "POST", "PUT", "DELETE","PATCH", "OPTIONS"));
+                                                        Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
                                         config.setAllowedHeaders(Arrays.asList("*"));
                                         config.setExposedHeaders(Arrays.asList("*"));
                                         config.setAllowCredentials(true);
@@ -50,7 +55,11 @@ public class SecurityConfig {
                                 .authorizeHttpRequests(auth -> auth
                                                 // 允许匿名访问的路径
                                                 .requestMatchers(
-                                                                "/products/**",
+                                                                "/products/images/**",
+                                                                "/products/search",
+                                                                "/products/{productId}/reviews",
+                                                                "/products/{id}",
+                                                                "/products",
                                                                 "/users/login",
                                                                 "/users/register",
                                                                 "/error",
@@ -61,12 +70,16 @@ public class SecurityConfig {
                                                                 "/users/")
                                                 .permitAll()
                                                 // 需要认证的路径
-                                                .requestMatchers(
+                                                .requestMatchers("/products/create",
+                                                                "/products/update",
+                                                                "/products/deactivate/{productId}",
+                                                                "/products/my/products/**",
                                                                 "/cart/**",
                                                                 "/orders/**",
                                                                 "/users/info",
                                                                 "/users/refresh",
-                                                                                "/users/update","/users/password")
+                                                                                "/users/update","/users/password"
+                                                               )
                                                 .authenticated()
                                                 .anyRequest().authenticated())
                                 // 添加 JWT 过滤器

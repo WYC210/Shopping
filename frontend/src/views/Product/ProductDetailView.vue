@@ -2,7 +2,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
-import { ElMessage } from "element-plus"
+import { ElMessage, ElMessageBox } from "element-plus"
 import { ShoppingCart, Picture, InfoFilled } from "@element-plus/icons-vue"
 import { productService } from "@/api/modules/product"
 import { orderService } from "@/api/modules/order"
@@ -82,13 +82,15 @@ const fetchProductDetail = async (): Promise<void> => {
     if (!productId) throw new Error("商品ID不存在")
     
     const response = await productService.getProductDetail(productId)
-    console.log(response.data.images)
+    
+    // 输出响应数据到控制台
+    console.log('获取商品详情响应:', response);
+
     if (response.data) {
       product.value = {
         ...response.data.product,
         images: response.data.images
-        }
-      
+      }
     } else {
       throw new Error("获取商品详情失败")
     }
@@ -203,10 +205,126 @@ const headerRef = ref()
 
 const randomQuote = ref('')
 
+// 评论相关的响应式变量
+const reviews = ref<Review[]>([])
+const currentPage = ref(1)
+const pageSize = ref(20)
+const total = ref(0)
+const newReview = ref({
+  rating: 5,
+  content: ''
+})
+
+// 获取评论列表
+const fetchReviews = async () => {
+  try {
+    const response = await productService.getProductReviews(
+      productId,
+      currentPage.value,
+      pageSize.value
+    )
+    console.log('获取评论响应:', response);
+    if (response.data) {
+      reviews.value = response.data.list || [] // 修改为 data.list
+      total.value = response.data.total || 0
+    }
+  } catch (error) {
+    console.error('获取评论失败:', error)
+    ElMessage.error('获取评论失败')
+  }
+}
+
+// 添加评论
+const handleAddReview = async () => {
+  if (!userStore.isLoggedIn) {
+    ElMessage.warning('请先登录')
+    router.push('/login')
+    return
+  }
+
+  if (!newReview.value.content.trim()) {
+    ElMessage.warning('请输入评论内容')
+    return
+  }
+
+  try {
+    await productService.addReview(productId, {
+      content: newReview.value.content,
+      rating: newReview.value.rating
+    })
+    ElMessage.success('评论成功')
+    newReview.value = { rating: 5, content: '' }
+    fetchReviews() // 刷新评论列表
+  } catch (error) {
+    console.error('添加评论失败:', error)
+    ElMessage.error('添加评论失败')
+  }
+}
+
+// 删除评论
+const handleDeleteReview = async (reviewId: string) => {
+  try {
+    await ElMessageBox.confirm('确定要删除这条评论吗？', '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    
+    await productService.deleteReview(reviewId)
+    ElMessage.success('删除成功')
+    fetchReviews() // 刷新评论列表
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('删除评论失败:', error)
+      ElMessage.error('删除评论失败')
+    }
+  }
+}
+
+// 分页处理
+const handleSizeChange = (val: number) => {
+  pageSize.value = val
+  fetchReviews()
+}
+
+const handleCurrentChange = (val: number) => {
+  currentPage.value = val
+  fetchReviews()
+}
+
+// 格式化日期
+const formatDate = (date: string) => {
+  return new Date(date).toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
+// 添加 activeTab 的响应式变量
+const activeTab = ref('details')
+
 onMounted(() => {
   fetchProductDetail()
   randomQuote.value = getRandomQuote('productDetail')
+  fetchReviews()
 })
+
+// 监听 activeTab 变化
+watch(activeTab, (newTab) => {
+  if (newTab === 'reviews') {
+    fetchReviews() // 切换到评论标签时重新获取评论
+  }
+})
+
+// 计算平均评分
+const averageRating = computed(() => {
+  if (!reviews.value?.length) return 0;
+  const sum = reviews.value.reduce((acc, review) => acc + review.rating, 0);
+  return Number((sum / reviews.value.length).toFixed(1));
+});
 </script>
 
 <template>
@@ -214,7 +332,6 @@ onMounted(() => {
     <HomeHeader />
     
     <div class="detail-container">
-      <!-- 页头 -->
       <el-page-header class="page-header" @back="goBack">
         <template #breadcrumb>
           <el-breadcrumb separator="/">
@@ -227,100 +344,197 @@ onMounted(() => {
           <div class="flex items-center">
             <el-icon class="mr-3"><InfoFilled /></el-icon>
             <span class="text-large font-600 mr-3">商品详情</span>
-            <span class="text-sm mr-2" style="color: var(--el-text-color-regular)">
-              {{ randomQuote }}
-            </span>
+             <div class="right-content">
+              <span class="quote-text text-sm" style="color: var(--el-text-color-regular)">
+                {{ randomQuote }}
+              </span>
+            </div>
             <el-tag v-if="product?.stock > 0" type="success">有货</el-tag>
             <el-tag v-else type="danger">无货</el-tag>
           </div>
         </template>
       </el-page-header>
 
-      <div v-if="product" class="product-detail">
-        <!-- 商品主要内容区域 -->
-        <div class="main-content">
-          <!-- 左侧图片展示 -->
-          <div class="left-section">
-            <el-image 
-              v-for="(image, index) in product.images" 
-              :key="index"
-              :src="image"
-              fit="cover"
-              class="product-image"
-              @error="handleImageError"
-            >
-              <template #error>
-                <div class="image-error">
-                  <el-icon><Picture /></el-icon>
+      <!-- 使用 el-tabs 包裹所有 tab-pane -->
+      <el-tabs v-model="activeTab" class="product-tabs">
+        <!-- 商品详情 tab -->
+        <el-tab-pane label="商品详情" name="details">
+          <div v-if="product" class="main-content">
+            <!-- 左侧图片部分 -->
+            <div class="left-section">
+              <el-image 
+                v-for="(image, index) in product.images" 
+                :key="index"
+                :src="image"
+                fit="cover"
+                class="product-image"
+                @error="handleImageError"
+              >
+                <template #error>
+                  <div class="image-error">
+                    <el-icon><Picture /></el-icon>
+                  </div>
+                </template>
+              </el-image>
+            </div>
+
+            <!-- 右侧信息部分 -->
+            <div class="right-section">
+              <h1 class="product-title">{{ product.name }}</h1>
+              <p class="product-price">¥{{ product.price }}</p>
+              
+              <!-- 商品信息 -->
+              <div class="product-info">
+                <div class="info-item">
+                  <span class="label">商品分类：</span>
+                  <span class="value">{{ categoryName }}</span>
+                </div>
+                <div class="info-item">
+                  <span class="label">商品评分：</span>
+                  <span class="value">{{ productRating }}分</span>
+                </div>
+                <div class="info-item">
+                  <span class="label">库存状态：</span>
+                  <span class="value" :class="{ 'out-of-stock': !product.stock }">
+                    {{ product.stock ? `有货 (${product.stock}件)` : '无货' }}
+                  </span>
+                </div>
+              </div>
+              
+              <!-- SKU 选择 -->
+              <div class="sku-selector">
+                <label>数量：</label>
+                <el-input-number 
+                  v-model="quantity"
+                  :min="1"
+                  :max="maxQuantity"
+                  size="large"
+                  
+                />
+              </div>
+
+              <!-- 操作按钮 -->
+              <div class="action-buttons">
+                <el-button 
+                  type="primary" 
+                  :disabled="!product?.stock"
+                  @click="handlePurchase"
+                >
+                  立即购买
+                </el-button>
+                <el-button 
+                  class="add-to-cart-btn hologram-btn"
+                  @click="handleAddToCart"
+                  :disabled="!product.stock"
+                >
+                  加入购物车
+                </el-button>
+              </div>
+            </div>
+          </div>
+
+          <div class="product-details">
+            <h2>商品详情</h2>
+            <div class="details-content">
+              <p>{{ product?.description }}</p>
+            </div>
+          </div>
+        </el-tab-pane>
+
+        <!-- 商品评论 tab -->
+        <el-tab-pane label="商品评论" name="reviews">
+          <div class="reviews-section">
+            <!-- 评分统计 -->
+            <div class="rating-summary">
+              <div class="rating-overall">
+                <span class="rating-number">{{ averageRating }}</span>
+                <el-rate
+                  v-model="averageRating"
+                  disabled
+                  show-score
+                  text-color="#ff9900"
+                />
+                <span class="rating-count">{{ total }}条评价</span>
+              </div>
+            </div>
+
+            <!-- 添加评论 -->
+            <div v-if="userStore.isLoggedIn" class="add-review">
+              <h3>发表评论</h3>
+              <div class="review-form">
+                <el-rate
+                  v-model="newReview.rating"
+                  show-score
+                  text-color="#ff9900"
+                />
+                <el-input
+                  v-model="newReview.content"
+                  type="textarea"
+                  :rows="3"
+                  placeholder="请分享您的使用体验..."
+                />
+                <el-button type="primary" @click="handleAddReview">
+                  发表评论
+                </el-button>
+              </div>
+            </div>
+            <el-alert
+              v-else
+              title="请登录后发表评论"
+              type="info"
+              :closable="false"
+            />
+
+            <!-- 评论列表 -->
+            <div class="reviews-list">
+              <el-empty v-if="!reviews?.length" description="暂无评论" />
+              <template v-else>
+                <div class="review-items">
+                  <div v-for="review in reviews" :key="review.reviewId" class="review-item">
+                    <div class="review-header">
+                      <div class="review-user">
+                        <el-avatar :size="32">{{ review.userId }}</el-avatar>
+                        <span class="username">用户{{ review.userId }}</span>
+                      </div>
+                      <el-rate
+                        v-model="review.rating"
+                        disabled
+                        show-score
+                        text-color="#ff9900"
+                      />
+                    </div>
+                    <div class="review-content">{{ review.content }}</div>
+                    <div class="review-footer">
+                      <span class="review-time">{{ formatDate(review.createdTime) }}</span>
+                      <el-button
+                        v-if="userStore.userId === review.userId"
+                        type="danger"
+                        link
+                        @click="handleDeleteReview(review.reviewId)"
+                      >
+                        删除
+                      </el-button>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- 分页 -->
+                <div class="pagination">
+                  <el-pagination
+                    v-model:current-page="currentPage"
+                    v-model:page-size="pageSize"
+                    :total="total"
+                    :page-sizes="[10, 20, 30, 50]"
+                    layout="total, sizes, prev, pager, next"
+                    @size-change="handleSizeChange"
+                    @current-change="handleCurrentChange"
+                  />
                 </div>
               </template>
-            </el-image>
-          </div>
-
-          <!-- 右侧商品信息 -->
-          <div class="right-section">
-            <h1 class="product-title">{{ product.name }}</h1>
-            <p class="product-price">¥{{ product.price }}</p>
-            
-            <!-- 商品信息 -->
-            <div class="product-info">
-              <div class="info-item">
-                <span class="label">商品分类：</span>
-                <span class="value">{{ categoryName }}</span>
-              </div>
-              <div class="info-item">
-                <span class="label">商品评分：</span>
-                <span class="value">{{ productRating }}分</span>
-              </div>
-              <div class="info-item">
-                <span class="label">库存状态：</span>
-                <span class="value" :class="{ 'out-of-stock': !product.stock }">
-                  {{ product.stock ? `有货 (${product.stock}件)` : '无货' }}
-                </span>
-              </div>
-            </div>
-            
-            <!-- SKU 选择 -->
-            <div class="sku-selector">
-              <label>数量：</label>
-              <el-input-number 
-                v-model="quantity"
-                :min="1"
-                :max="maxQuantity"
-                size="large"
-                
-              />
-            </div>
-
-            <!-- 操作按钮 -->
-            <div class="action-buttons">
-              <el-button 
-                type="primary" 
-                :disabled="!product?.stock"
-                @click="handlePurchase"
-              >
-                立即购买
-              </el-button>
-              <el-button 
-                class="add-to-cart-btn hologram-btn"
-                @click="handleAddToCart"
-                :disabled="!product.stock"
-              >
-                加入购物车
-              </el-button>
             </div>
           </div>
-        </div>
-
-        <!-- 商品详情区域 -->
-        <div class="product-details">
-          <h2>商品详情</h2>
-          <div class="details-content">
-            <p>{{ product.description }}</p>
-            <!-- 可以添加更多详情内容 -->
-          </div>
-        </div>
-      </div>
+        </el-tab-pane>
+      </el-tabs>
     </div>
   </div>
 </template>
@@ -589,5 +803,133 @@ onMounted(() => {
   align-items: center;
   justify-content: flex-end;
   width: 100%;
+}
+.right-content {
+  flex-grow: 1; /* 占据剩余空间 */
+  text-align: right; /* 文本右对齐 */
+  padding-left: 20px; /* 与左侧保持一定距离 */
+}
+
+.quote-text {
+  font-style: italic;
+  white-space: nowrap; /* 防止文本换行 */
+}
+
+.reviews-section {
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 15px;
+  border: 1px solid rgba(250, 159, 252, 0.3);
+}
+
+.rating-summary {
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+.rating-overall {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+
+.rating-number {
+  font-size: 36px;
+  color: var(--cosmic-blue);
+}
+
+.rating-count {
+  color: var(--text-secondary);
+}
+
+.add-review {
+  margin-bottom: 30px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 10px;
+}
+
+.review-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.review-item {
+  padding: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.review-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.review-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.username {
+  color: var(--cosmic-blue);
+}
+
+.review-content {
+  color: var(--starlight);
+  margin: 10px 0;
+  line-height: 1.6;
+}
+
+.review-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.pagination {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+:deep(.el-pagination) {
+  --el-pagination-bg-color: transparent;
+  --el-pagination-text-color: var(--starlight);
+  --el-pagination-button-color: var(--starlight);
+  --el-pagination-button-bg-color: transparent;
+  --el-pagination-button-disabled-color: var(--text-secondary);
+  --el-pagination-button-disabled-bg-color: transparent;
+  --el-pagination-hover-color: var(--cosmic-blue);
+}
+
+:deep(.el-rate) {
+  --el-rate-star-color: var(--cosmic-blue);
+}
+
+/* 添加 tabs 相关样式 */
+:deep(.el-tabs__item) {
+  color: var(--text-secondary);
+}
+
+:deep(.el-tabs__item.is-active) {
+  color: var(--cosmic-blue);
+}
+
+:deep(.el-tabs__active-bar) {
+  background-color: var(--cosmic-blue);
+}
+
+:deep(.el-tabs__nav-wrap::after) {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.product-tabs {
+  padding: 0 20px;
 }
 </style>

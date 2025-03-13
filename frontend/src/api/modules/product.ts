@@ -3,6 +3,7 @@ import { BaseApiService } from './base';
 import { httpClient } from '@/utils/request';
 import type { Product, ProductResponse, PaginationParams, CategoryResponse } from '@/types/api/product';
 import type { Category } from '@/types/store/HomeType';
+import { v4 as uuidv4 } from 'uuid'; // 引入 UUID 库
 
 interface ProductSearchParams extends PaginationParams {
   pageNum?: number;
@@ -18,18 +19,21 @@ interface ProductDetailParams {
   includeComments?: boolean;
 }
 
-interface ProductData {
-  product_id: string;
+// 商品创建/更新的数据接口
+export interface ProductData {
   name: string;
   price: number;
-  stock?: number;
-  [key: string]: any;
+  description: string;
+  stock: number;
+  imageUrl: string;
+  categoryId: string;
 }
 
+// 商品详情响应接口
 interface ProductDetailResponse {
   data: {
     product: Product;
-    images?: string[];
+    images: string[];
   };
   status: number;
   message?: string;
@@ -45,6 +49,29 @@ interface ProductDetailsResponse {
   message?: string;
 }
 
+// 评论接口
+interface ReviewRequest {
+  content: string;
+  rating: number;
+}
+
+interface Review {
+  reviewId: string;
+  productId: string;
+  userId: string;
+  content: string;
+  rating: number;
+  createdTime: string;
+  modifiedTime: string;
+}
+
+interface ReviewResponse {
+  records: Review[];
+  total: number;
+  page: number;
+  size: number;
+}
+
 /**
  * 商品服务
  * - 管理商品信息查询
@@ -55,32 +82,138 @@ export class ProductService extends BaseApiService<Product> {
     super('/products', httpClient);
   }
 
-  // 获取商品列表
-  async getProducts(params: PaginationParams): Promise<ProductResponse> {
-    console.log('发送商品请求:', {
-      url: `${this.baseUrl}`,
+  /**
+   * 获取所有商品列表
+   */
+  async getProducts(params?: PaginationParams, headers?: Record<string, string>): Promise<ProductResponse> {
+    return this.request<ProductResponse>({
       method: 'GET',
-      params
+      url: '', // 这里是获取所有商品的接口
+      params, // 传递分页和其他参数
+      headers // 传递请求头
     });
-
-    const response = await this.request<ProductResponse>({
-      method: 'GET',
-      url: '',
-      params
-    });
-
-    console.log('商品响应数据:', response);
-    return response;
   }
 
-  // 获取商品详情
+  /**
+   * 获取我的商品列表
+   */
+  async getMyProducts(params?: { page: number; size: number }, headers?: Record<string, string>): Promise<ProductResponse> {
+    return this.request<ProductResponse>({
+      method: 'GET',
+      url: '/my/products', // 这里是获取我的商品的接口
+      params,
+      headers
+    });
+  }
+
+  /**
+   * 获取商品详情
+   */
   async getProductDetail(productId: string): Promise<ProductDetailResponse> {
-    if (!productId) {
-      throw new Error('商品ID不能为空');
-    }
+    if (!productId) throw new Error('商品ID不能为空');
     return this.request({
-      url: `/${productId}`,  // 简化URL路径
+      url: `/${productId}`,
       method: 'GET'
+    });
+  }
+
+  /**
+   * 创建商品
+   */
+  async createProduct(data: ProductData & {
+    productId?: string; // 可选字段
+    brand?: string; // 可选字段
+    tags?: string; // 可选字段
+    imageUrl?: string; // 可选字段
+    rating?: number; // 可选字段
+    reviewCount?: number; // 可选字段
+    modifiedUser?: string; // 可选字段
+    modifiedTime?: string; // 可选字段
+  }): Promise<any> {
+    const requestBody = {
+      productId: uuidv4(), // 生成唯一的商品ID
+      name: data.name,
+      description: data.description || '',
+      price: data.price,
+      stock: data.stock,
+      brand: data.brand || '',
+      tags: data.tags || '',
+      imageUrl: data.imageUrl || '',
+      rating: data.rating || 0,
+      reviewCount: data.reviewCount || 0,
+      isActive: 1,
+      createdUser: 'currentUser', // 这里可以替换为当前用户的用户名
+      createdTime: new Date().toISOString(),
+      modifiedUser: 'currentUser', // 这里可以替换为当前用户的用户名
+      modifiedTime: new Date().toISOString(),
+      categoryId: data.categoryId // 确保这里是一个字符串
+    };
+
+    return this.request({
+      url: '/create',
+      method: 'POST',
+      data: requestBody // 发送构造的请求体
+    });
+  }
+
+  /**
+   * 更新商品
+   */
+  async updateProduct(data: ProductData & { id: string }): Promise<any> {
+    if (!data.id) throw new Error('商品ID不能为空');
+    return this.request({
+      url: '/update',
+      method: 'PUT',
+      data
+    });
+  }
+
+  /**
+   * 下架商品
+   */
+  async deactivateProduct(productId: string): Promise<any> {
+    if (!productId) throw new Error('商品ID不能为空');
+    return this.request({
+      url: `/deactivate/${productId}`,
+      method: 'PUT'
+    });
+  }
+
+  /**
+   * 上架商品
+   */
+  async activateProduct(productId: string): Promise<any> {
+    if (!productId) throw new Error('商品ID不能为空');
+    return this.request({
+      url: `/activate/${productId}`,
+      method: 'PUT'
+    });
+  }
+
+  /**
+   * 删除商品
+   */
+  async deleteProduct(productId: string): Promise<any> {
+    if (!productId) throw new Error('商品ID不能为空');
+    return this.request({
+      url: `/${productId}`,
+      method: 'DELETE'
+    });
+  }
+
+  /**
+   * 搜索商品
+   */
+  async searchProducts(params: string | { keyword: string; page?: number; size?: number }) {
+    // 如果参数是字符串，转换为对象格式
+    const searchParams = typeof params === 'string' 
+      ? { keyword: params }
+      : params;
+
+    return this.request({
+      url: '/search',
+      method: 'GET',
+      params: searchParams // 使用对象格式的参数
     });
   }
 
@@ -128,78 +261,12 @@ export class ProductService extends BaseApiService<Product> {
     });
   }
 
-  // 搜索商品
-  async searchProducts(keyword: string, page = 1, size = 10): Promise<ProductResponse> {
-    try {
-      console.log('发送搜索请求，参数:', {
-        keyword,
-        page,
-        size
-      });
-      
-      const response = await this.request<ProductResponse>({
-        url: '/search', // 使用 /search 端点
-        method: 'GET',
-        params: {
-          keyword,
-          page,
-          size
-        }
-      });
-      
-      console.log('搜索响应数据:', response);
-      return response;
-    } catch (error) {
-      console.error('搜索商品失败:', error);
-      throw error;
-    }
-  }
-
   // 获取推荐商品
   async getRecommendedProducts(productId: string, limit: number = 5): Promise<Product[]> {
     return this.request({
       url: this.getUrl(`/${productId}/recommendations`),
       method: 'GET',
       params: { limit }
-    });
-  }
-
-  // 上架商品
-  async createProduct(productData: ProductData): Promise<Product> {
-    // 必填字段校验
-    if (!productData.product_id || !productData.name || 
-        !productData.price || !productData.stock) {
-      throw new Error('缺少必填字段: product_id/name/price/stock');
-    }
-
-    return this.request({
-      url: this.getUrl('/create'), // 指定自定义路径
-      method: 'POST',
-      data: productData
-    });
-  }
-
-  // 更新商品
-  async updateProduct(productId: string, productData: Partial<ProductData>): Promise<Product> {
-    if (!productId) throw new Error('商品ID不能为空');
-    
-    return this.request({
-      url: this.getUrl(`/update`), // 或使用 RESTful 风格：url: this.getUrl(`/${productId}`)
-      method: 'PUT',
-      data: {
-        ...productData,
-        product_id: productId // 确保传递ID
-      }
-    });
-  }
-
-  // 下架商品
-  async deactivateProduct(productId: string): Promise<void> {
-    if (!productId) throw new Error('商品ID不能为空');
-    
-    return this.request({
-      url: this.getUrl(`/deactivate/${productId}`),
-      method: 'PUT'
     });
   }
 
@@ -222,6 +289,32 @@ export class ProductService extends BaseApiService<Product> {
     return this.request({
       url: this.getUrl(`/${id}`),
       method: 'GET'
+    });
+  }
+
+  // 获取商品评论
+  async getProductReviews(productId: string, page: number = 1, size: number = 20): Promise<ReviewResponse> {
+    return this.request({
+      url: `/${productId}/reviews`,
+      method: 'GET',
+      params: { page, size }
+    });
+  }
+
+  // 添加评论
+  async addReview(productId: string, data: ReviewRequest): Promise<any> {
+    return this.request({
+      url: `/${productId}/reviews`,
+      method: 'POST',
+      data
+    });
+  }
+
+  // 删除评论
+  async deleteReview(reviewId: string): Promise<any> {
+    return this.request({
+      url: `/reviews/${reviewId}`,
+      method: 'DELETE'
     });
   }
 }

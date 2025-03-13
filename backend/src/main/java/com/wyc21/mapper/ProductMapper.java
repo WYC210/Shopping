@@ -5,7 +5,9 @@ import org.apache.ibatis.annotations.Param;
 
 import com.wyc21.entity.Product;
 import com.wyc21.entity.ProductReview;
+import com.wyc21.entity.Category;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Mapper
@@ -29,8 +31,12 @@ public interface ProductMapper {
         Product findById(String id);
 
         // 获取商品评论
-        List<ProductReview> findReviewsByProductId(@Param("productId") Long productId,
+        List<ProductReview> findReviewsByProductId(@Param("productId") String productId,
+                        @Param("offset") int offset,
                         @Param("limit") int limit);
+
+        // 添加这个方法
+        int countReviewsByProductId(@Param("productId") String productId);
 
         void insertProduct(Product product);
 
@@ -69,4 +75,18 @@ public interface ProductMapper {
                                    @Param("size") int size);
         
         int countSearchProducts(@Param("keyword") String keyword);
+
+        List<Product> findProductsByUserId(@Param("userId") String userId);
+
+        void insertCategory(Category category);
+
+        Category findCategoryByName(String name);
+
+        // 添加评论
+        void insertReview(ProductReview review);
+
+        // 删除评论
+        void deleteReview(@Param("reviewId") String reviewId, 
+                         @Param("userId") String userId,
+                         @Param("modifiedTime") LocalDateTime modifiedTime);
 }
