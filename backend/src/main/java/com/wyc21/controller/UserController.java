@@ -17,6 +17,7 @@ import com.wyc21.service.TokenService;
 import com.wyc21.service.BrowseHistoryService;
 import com.wyc21.entity.BrowseHistory;
 import com.wyc21.model.PageResult;
+import com.wyc21.service.ex.PasswordNotMatchException;
 
 @RestController
 @RequestMapping("/users")
@@ -169,11 +170,13 @@ public class UserController extends BaseController {
             userService.updatePassword(uid, oldPassword, newPassword);
 
             return new JsonResult<>(OK, null, "密码修改成功");
+        } catch (PasswordNotMatchException e) {
+            // 原密码错误的情况
+            return new JsonResult<>(403, null, "原密码错误");
         } catch (Exception e) {
             e.printStackTrace();
             return new JsonResult<>(500, null, "修改密码失败：" + e.getMessage());
         }
-
     }
 
     /**

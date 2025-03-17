@@ -5,7 +5,7 @@ export interface UserProfile {
   email: string;
   avatar?: string;
   phone?: string;
-  createdAt: Date;
+  createdTime: Date;
   registeredAt?: string;
 }
 

@@ -1,4 +1,3 @@
-
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
@@ -8,6 +7,7 @@ import { productService } from "@/api/modules/product"
 import { orderService } from "@/api/modules/order"
 import { useUserStore } from "@/types/store/user"
 import { useCategoryStore } from "@/types/store/category"
+import { cartService } from "@/api/modules/cart"
 
 import type {  ProductDetail } from '@/types/api/product'
 import errorImage from '@/assets/logo_w.png'
@@ -87,13 +87,20 @@ const handleAddToCart = async (): Promise<void> => {
       return;
     }
 
-  
+    console.log('开始添加商品到购物车:', {
+      productId: productId,
+      quantity: quantity.value
+    });
 
-    
+    const response = await cartService.addToCart({
+      productId: productId,
+      quantity: quantity.value
+    });
+    console.log('添加到购物车响应:', response);
    
     ElMessage.success('添加到购物车成功');
   } catch (error) {
-   
+    console.error('添加到购物车失败:', error);
     ElMessage.error(`添加到购物车失败：${error instanceof Error ? error.message : '未知错误'}`);
   }
 };
@@ -623,22 +630,57 @@ const averageRating = computed(() => {
   margin-top: 20px;
 }
 
-.buy-now-btn,
-.add-to-cart-btn {
+:deep(.el-button) {
   flex: 1;
-  height: 50px;
-  font-size: 18px;
+  height: 45px;
+  font-size: 16px;
+  border-radius: 4px;
+  transition: all 0.3s ease;
 }
 
-.buy-now-btn {
-  background: linear-gradient(45deg, var(--aurora-pink), var(--cosmic-blue));
+/* 立即购买按钮 */
+:deep(.el-button--primary) {
+  background: linear-gradient(45deg, #00a8ff, #0097e6);
   border: none;
+  color: #ffffff;
 }
 
+:deep(.el-button--primary:hover) {
+  background: linear-gradient(45deg, #0097e6, #00a8ff);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 168, 255, 0.3);
+}
+
+:deep(.el-button--primary:active) {
+  transform: translateY(0);
+}
+
+/* 加入购物车按钮 */
 .add-to-cart-btn {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid var(--cosmic-blue);
-  color: var(--cosmic-blue);
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(0, 168, 255, 0.5) !important;
+  color: #00a8ff !important;
+}
+
+.add-to-cart-btn:hover {
+  background: rgba(0, 168, 255, 0.1) !important;
+  border-color: #00a8ff !important;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 168, 255, 0.2);
+}
+
+.add-to-cart-btn:active {
+  transform: translateY(0);
+}
+
+/* 禁用状态 */
+:deep(.el-button.is-disabled) {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: rgba(255, 255, 255, 0.4) !important;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .product-details {

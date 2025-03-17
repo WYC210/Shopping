@@ -110,16 +110,16 @@ const getTotalItems = (items: any[]) => {
 }
 
 .order-card {
-  background: #570808;
+  background: rgba(6, 23, 53, 0.8);  /* 深海蓝背景 */
   border-radius: 8px;
   margin-bottom: 16px;
   overflow: hidden;
-  border: 1px solid #ebeef5;
+  border: 1px solid rgba(0, 149, 255, 0.2);  /* 淡蓝色边框 */
   transition: all 0.3s ease;
 }
 
 .order-card:hover {
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 12px rgba(0, 149, 255, 0.1);
 }
 
 .order-header {
@@ -127,7 +127,8 @@ const getTotalItems = (items: any[]) => {
   justify-content: space-between;
   align-items: center;
   padding: 16px;
-  border-bottom: 1px solid #1852d7;
+  border-bottom: 1px solid rgba(0, 149, 255, 0.2);
+  background: rgba(8, 32, 73, 0.9);  /* 稍深的蓝色 */
 }
 
 .order-info {
@@ -136,12 +137,12 @@ const getTotalItems = (items: any[]) => {
 }
 
 .order-id {
-  color: #333;
+  color: #a8d8ff;  /* 浅蓝色文字 */
   font-weight: 500;
 }
 
 .order-time {
-  color: #909399;
+  color: rgba(168, 216, 255, 0.6);  /* 半透明浅蓝色 */
 }
 
 .order-status {
@@ -149,15 +150,15 @@ const getTotalItems = (items: any[]) => {
 }
 
 .order-status.pending_pay {
-  color: #e6a23c;
+  color: #ffd700;  /* 金色 */
 }
 
 .order-status.paid {
-  color: #67c23a;
+  color: #00ffc8;  /* 青色 */
 }
 
 .order-status.cancelled {
-  color: #909399;
+  color: rgba(168, 216, 255, 0.4);  /* 暗淡的蓝色 */
 }
 
 .products-list {
@@ -168,7 +169,7 @@ const getTotalItems = (items: any[]) => {
   display: flex;
   gap: 16px;
   padding: 12px 0;
-  border-bottom: 1px solid #510b0b;
+  border-bottom: 1px solid rgba(0, 149, 255, 0.1);
 }
 
 .product-item:last-child {
@@ -197,7 +198,7 @@ const getTotalItems = (items: any[]) => {
 
 .product-name {
   font-size: 14px;
-  color: #333;
+  color: #a8d8ff;  /* 浅蓝色文字 */
   margin: 0;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -212,12 +213,12 @@ const getTotalItems = (items: any[]) => {
 }
 
 .product-price {
-  color: #ff4d4f;
+  color: #00a8ff;  /* 亮蓝色 */
   font-weight: 500;
 }
 
 .product-quantity {
-  color: #909399;
+  color: rgba(168, 216, 255, 0.6);  /* 半透明浅蓝色 */
 }
 
 .order-footer {
@@ -225,23 +226,23 @@ const getTotalItems = (items: any[]) => {
   justify-content: space-between;
   align-items: center;
   padding: 16px;
-  background: #700c0c;
-  border-top: 1px solid #ebeef5;
+  background: rgba(8, 32, 73, 0.9);  /* 稍深的蓝色 */
+  border-top: 1px solid rgba(0, 149, 255, 0.2);
 }
 
 .order-amount {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  color: #606266;
+  color: rgba(168, 216, 255, 0.8);  /* 浅蓝色文字 */
 }
 
 .total-price {
-  color: #333;
+  color: #a8d8ff;  /* 浅蓝色文字 */
 }
 
 .total-price strong {
-  color: #07cfa1;
+  color: #00a8ff;  /* 亮蓝色 */
   font-size: 16px;
 }
 
@@ -266,5 +267,30 @@ const getTotalItems = (items: any[]) => {
     width: 100%;
     justify-content: flex-end;
   }
+}
+
+/* 按钮样式 */
+:deep(.el-button--primary) {
+  background: linear-gradient(45deg, #00a8ff, #0097e6);
+  border: none;
+}
+
+:deep(.el-button--primary:hover) {
+  background: linear-gradient(45deg, #0097e6, #00a8ff);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 168, 255, 0.3);
+}
+
+:deep(.el-button--default) {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(0, 168, 255, 0.5);
+  color: #00a8ff;
+}
+
+:deep(.el-button--default:hover) {
+  background: rgba(0, 168, 255, 0.1);
+  border-color: #00a8ff;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 168, 255, 0.2);
 }
 </style> 

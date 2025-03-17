@@ -70,10 +70,10 @@ public interface ProductMapper {
          */
         List<String> findProductImages(@Param("productId") Long productId);
 
-        List<Product> searchProducts(@Param("keyword") String keyword, 
-                                   @Param("offset") int offset, 
-                                   @Param("size") int size);
-        
+        List<Product> searchProducts(@Param("keyword") String keyword,
+                        @Param("offset") int offset,
+                        @Param("size") int size);
+
         int countSearchProducts(@Param("keyword") String keyword);
 
         List<Product> findProductsByUserId(@Param("userId") String userId);
@@ -86,7 +86,7 @@ public interface ProductMapper {
         void insertReview(ProductReview review);
 
         // 删除评论
-        void deleteReview(@Param("reviewId") String reviewId, 
-                         @Param("userId") String userId,
-                         @Param("modifiedTime") LocalDateTime modifiedTime);
+        void deleteReview(@Param("reviewId") String reviewId,
+                        @Param("userId") String userId,
+                        @Param("modifiedTime") LocalDateTime modifiedTime);
 }

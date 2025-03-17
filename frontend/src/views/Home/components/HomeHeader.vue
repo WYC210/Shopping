@@ -83,7 +83,8 @@
               <span class="username">{{ userStore.userInfo?.username || '用户' }}</span>
             </div>
             <template #dropdown>
-              <el-dropdown-menu>
+              <el-dropdown-menu
+              style="background-color: rgba(8, 32, 73, 0.9); ;">
                 <el-dropdown-item command="profile">个人中心</el-dropdown-item>
                 <el-dropdown-item command="orders">我的订单</el-dropdown-item>
                 <el-dropdown-item divided command="logout">退出登录</el-dropdown-item>
@@ -409,23 +410,35 @@ defineExpose({
   font-size: 14px;
 }
 
+/* 修改下拉菜单样式 */
 :deep(.el-dropdown-menu) {
-  background: rgba(6, 5, 36, 0.95);
+  background: rgba(6, 23, 53, 0.95) !important;  /* 深海蓝背景 */
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(250, 159, 252, 0.3);
+  border: 1px solid rgba(0, 149, 255, 0.2) !important;  /* 淡蓝色边框 */
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
 :deep(.el-dropdown-menu__item) {
-  color: var(--starlight);
+  color: #a8d8ff !important;  /* 浅蓝色文字 */
+  background: transparent !important;
 }
 
 :deep(.el-dropdown-menu__item:hover) {
-  background-color: rgba(250, 159, 252, 0.1);
-  color: var(--cosmic-blue);
+  background: rgba(0, 149, 255, 0.1) !important;  /* 半透明蓝色悬浮背景 */
+  color: #00a8ff !important;  /* 亮蓝色文字 */
 }
 
 :deep(.el-dropdown-menu__item.is-disabled) {
-  color: rgba(255, 255, 255, 0.4);
+  color: rgba(168, 216, 255, 0.4) !important;  /* 暗淡的蓝色 */
+}
+
+/* 分割线颜色 */
+:deep(.el-dropdown-menu__item--divided:before) {
+  background-color: rgba(0, 149, 255, 0.2);
+}
+
+:deep(.el-dropdown-menu__item.el-dropdown-menu__item--divided) {
+  border-top: 1px solid rgba(0, 149, 255, 0.2);
 }
 
 /* 添加搜索框相关样式 */

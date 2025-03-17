@@ -1,6 +1,5 @@
-
 <script setup lang="ts">
-import { ref,  onMounted, watch } from "vue";
+import { ref,  onMounted, watch, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
 import type { Product } from "@/types/api/product";
@@ -30,25 +29,28 @@ interface FilterParams {
   maxPrice?: number;
   hasStock: boolean;
   hasDiscount: boolean;
+  keyword?: string;
 }
 
 // 状态定义
 const router = useRouter();
 const products = ref<Product[]>([]);
 const loading = ref(false);
+const hasMore = ref(true);
+const loadingMore = ref(false);
 const categories = ref<{ id: string; name: string }[]>([]);
 
 // 分页和排序参数
 const productParams = ref<ProductParams>({
   pageNum: 1,
-  pageSize: 10,
+  pageSize: 20,
   sortBy: 'default',  
   order: 'desc'
 });
 
 const pagination = ref<Pagination>({
   total: 0,
-  pageSize: 10,
+  pageSize: 20,
   currentPage: 1
 });
 
@@ -82,96 +84,90 @@ const filterParams = ref<FilterParams>({
   hasDiscount: false
 });
 
-// 添加一个存储所有商品的数组
-const allProducts = ref<Product[]>([]);
+
+
+// 创建观察器
+const observer = ref<IntersectionObserver | null>(null);
+const loadMoreTrigger = ref<HTMLElement | null>(null);
 
 // 修改获取商品列表函数
-const fetchProducts = async () => {
+const fetchProducts = async (isLoadMore = false) => {
   try {
-    loading.value = true;
-    const response = await productService.getProducts({
+    if (!isLoadMore) {
+      loading.value = true;
+    } else {
+      loadingMore.value = true;
+    }
+
+    const requestParams = {
       page: productParams.value.pageNum,
-      size: productParams.value.pageSize
-    });
+      size: productParams.value.pageSize,
+      categoryId: filterParams.value.categoryId || undefined,
+      keyword: filterParams.value.keyword || undefined,
+      imageUrl: undefined
+    };
+    console.log('请求商品列表:', requestParams);
     
-    // 处理图片路径
-    allProducts.value = response.list.map(product => ({
+    const response = await productService.getProducts(requestParams);
+    console.log('响应商品列表:', response);
+    
+    const newProducts = response.list.map(product => ({
       ...product,
       imageUrl: product.imageUrl ? `http://localhost:8088/products${product.imageUrl}` : errorImage
     }));
+
+    // 如果是加载更多，则拼接数据
+    if (isLoadMore) {
+      products.value = [...products.value, ...newProducts];
+    } else {
+      products.value = newProducts;
+    }
+
+    // 更新是否还有更多数据
+    hasMore.value = response.total > products.value.length;
     
-    // 初始化显示，应用筛选
-    filterProducts();
-    
+    // 更新分页信息
+    pagination.value = {
+      total: response.total,
+      pageSize: productParams.value.pageSize,
+      currentPage: productParams.value.pageNum
+    };
+
   } catch (error) {
     ElMessage.error('获取商品列表失败');
     console.error(error);
   } finally {
-    loading.value = false;
+    if (!isLoadMore) {
+      loading.value = false;
+    } else {
+      loadingMore.value = false;
+    }
   }
 };
 
-// 添加筛选函数，根据筛选条件过滤商品
-const filterProducts = () => {
-  let filteredProducts = [...allProducts.value];
-  
-  // 根据分类筛选
-  if (filterParams.value.categoryId) {
-    filteredProducts = filteredProducts.filter(product => 
-      product.category === filterParams.value.categoryId
-    );
-  }
+// 加载更多数据
+const loadMore = () => {
+  if (loadingMore.value || !hasMore.value) return;
+  productParams.value.pageNum += 1;
+  fetchProducts(true);
+};
 
-  // 根据价格区间筛选
-  if (filterParams.value.minPrice !== undefined) {
-    filteredProducts = filteredProducts.filter(product => 
-      product.price >= filterParams.value.minPrice!
-    );
-  }
-  if (filterParams.value.maxPrice !== undefined) {
-    filteredProducts = filteredProducts.filter(product => 
-      product.price <= filterParams.value.maxPrice!
-    );
-  }
-
-  // 根据销量筛选
-  if (filterParams.value.hasStock) {
-    filteredProducts = filteredProducts.filter(product => 
-      (product.sales || 0) > 0
-    );
-  }
-
-  // 应用排序
-  if (productParams.value.sortBy !== 'default') {
-    filteredProducts.sort((a, b) => {
-      switch (productParams.value.sortBy) {
-        case 'price':
-          return productParams.value.order === 'asc' 
-            ? a.price - b.price 
-            : b.price - a.price;
-        case 'time':
-          return productParams.value.order === 'asc'
-            ? new Date(a.createTime || 0).getTime() - new Date(b.createTime || 0).getTime()
-            : new Date(b.createTime || 0).getTime() - new Date(a.createTime || 0).getTime();
-        case 'sales':
-          return productParams.value.order === 'asc'
-            ? (a.sales || 0) - (b.sales || 0)
-            : (b.sales || 0) - (a.sales || 0);
-        default:
-          return 0;
+// 设置观察器
+const setupObserver = () => {
+  observer.value = new IntersectionObserver(
+    (entries) => {
+      if (entries[0].isIntersecting && !loadingMore.value && hasMore.value) {
+        loadMore();
       }
-    });
-  }
+    },
+    {
+      threshold: 0.1
+    }
+  );
 
-  // 更新显示的商品列表
-  products.value = filteredProducts;
-  
-  // 更新分页信息
-  pagination.value = {
-    total: filteredProducts.length,
-    pageSize: productParams.value.pageSize,
-    currentPage: productParams.value.pageNum
-  };
+  if (loadMoreTrigger.value) {
+    observer.value.observe(loadMoreTrigger.value);
+  }
 };
 
 // 处理排序变化
@@ -183,18 +179,7 @@ const handleSortChange = (value: string) => {
   fetchProducts();
 };
 
-// 处理分页大小变化
-const handleSizeChange = (size: number) => {
-  productParams.value.pageSize = size;
-  productParams.value.pageNum = 1;
-  fetchProducts();
-};
 
-// 处理页码变化
-const handleCurrentChange = (page: number) => {
-  productParams.value.pageNum = page;
-  fetchProducts();
-};
 
 // 跳转到商品详情
 const goToDetail = (productId: string) => {
@@ -215,7 +200,7 @@ const handleImageError = (product: Product) => {
 const handleFilterChange = (categoryId: string | null) => {
   filterParams.value.categoryId = categoryId;
   productParams.value.pageNum = 1; // 重置页码
-  filterProducts(); // 使用前端筛选替代重新请求
+  fetchProducts(); // 使用前端筛选替代重新请求
 };
 
 // 修改价格区间处理函数
@@ -229,7 +214,7 @@ const handlePriceRangeChange = (range: string | null) => {
     filterParams.value.minPrice = undefined;
     filterParams.value.maxPrice = undefined;
   }
-  filterProducts(); // 使用前端筛选
+  fetchProducts(); // 使用前端筛选
 };
 
 // 处理自定义价格范围
@@ -238,7 +223,7 @@ const handleCustomPriceRange = () => {
     filterParams.value.minPrice = customPriceMin.value;
     filterParams.value.maxPrice = customPriceMax.value;
     filterParams.value.priceRange = `${customPriceMin.value}-${customPriceMax.value}`;
-    filterProducts();
+    fetchProducts();
   }
 };
 
@@ -255,21 +240,28 @@ const fetchCategories = async () => {
   }
 };
 
-// 修改监听函数
+// 监听筛选条件变化
 watch(
-  () => ({ 
-    ...filterParams.value,
-    ...productParams.value 
-  }),
+  [filterParams, () => productParams.value.sortBy],
   () => {
-    filterProducts(); // 使用前端筛选替代重新请求
+    productParams.value.pageNum = 1; // 重置页码
+    hasMore.value = true; // 重置加载更多状态
+    fetchProducts();
   },
   { deep: true }
 );
 
 onMounted(() => {
   fetchCategories();
-  fetchProducts(); // 获取所有商品数据
+  fetchProducts();
+  setupObserver();
+});
+
+// 组件卸载时清理观察器
+onUnmounted(() => {
+  if (observer.value) {
+    observer.value.disconnect();
+  }
 });
 </script>
 
@@ -367,10 +359,12 @@ onMounted(() => {
       <el-col
         v-for="product in products"
         :key="product.productId"
-        :xs="24"
-        :sm="12"
-        :md="8"
-        :lg="6"
+        :xs="12"
+        :sm="8"
+        :md="6"
+        :lg="4"
+        :xl="4"
+        class="mb-3"
       >
         <el-card
           class="product-card"
@@ -396,17 +390,19 @@ onMounted(() => {
       </el-col>
     </el-row>
 
-    <!-- 分页 -->
-    <div class="pagination">
-      <el-pagination
-        v-model:current-page="productParams.pageNum"
-        v-model:page-size="productParams.pageSize"
-        :total="pagination.total"
-        :page-sizes="[10, 20, 30, 40]"
-        layout="total, sizes, prev, pager, next, jumper"
-        @size-change="handleSizeChange"
-        @current-change="handleCurrentChange"
-      />
+    <!-- 替换分页组件为加载更多触发器 -->
+    <div 
+      ref="loadMoreTrigger"
+      class="load-more"
+      v-show="hasMore"
+    >
+      <el-icon v-if="loadingMore" class="loading"><Loading /></el-icon>
+      <span v-else>加载更多</span>
+    </div>
+
+    <!-- 没有更多数据时显示 -->
+    <div v-if="!hasMore && products.length > 0" class="no-more">
+      没有更多数据了
     </div>
   </div>
 </template>
@@ -592,6 +588,7 @@ onMounted(() => {
   overflow: hidden;
   background: rgba(87, 13, 152, 0.15);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  margin-bottom: 12px;
 }
 
 .product-card:hover {
@@ -601,7 +598,7 @@ onMounted(() => {
 
 .product-image {
   width: 100%;
-  height: 200px; /* 固定高度 */
+  height: 160px;
   display: block;
 }
 
@@ -617,25 +614,36 @@ onMounted(() => {
 }
 
 .product-info {
-  padding: 15px;
+  padding: 12px;
 }
 
 .product-info h3 {
-  margin: 0 0 10px;
-  font-size: 1.2em;
-  color: #ffffff; /* 商品名称使用纯白色 */
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: #ffffff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  height: 38px;
 }
 
 .price {
-  font-size: 1.5em;
-  color: var(--cosmic-blue); /* 保持价格的蓝色 */
-  margin: 10px 0;
+  color: #0ccf29;
+  font-size: 16px;
+  margin: 8px 0;
 }
 
 .description {
-  color: rgba(255, 255, 255, 0.8); /* 描述文字使用半透明白色 */
-  font-size: 0.9em;
-  margin: 10px 0;
+  font-size: 12px;
+  color: #0777e7;
+  margin: 8px 0;
+  -webkit-line-clamp: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
 }
 
 .sales {
@@ -745,5 +753,32 @@ onMounted(() => {
   .custom-price-range {
     flex-wrap: wrap;
   }
+}
+
+.mb-3 {
+  margin-bottom: 12px;
+}
+
+.load-more {
+  text-align: center;
+  padding: 20px 0;
+  color: var(--starlight);
+  cursor: pointer;
+}
+
+.loading {
+  animation: rotate 1s linear infinite;
+}
+
+.no-more {
+  text-align: center;
+  padding: 20px 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 </style>

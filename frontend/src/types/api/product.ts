@@ -14,6 +14,8 @@ export interface Product {
   rating: number;
   reviewCount: number;
   tags: string;
+
+  
 }
 
 export interface ProductResponse {

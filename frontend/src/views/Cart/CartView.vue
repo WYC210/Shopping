@@ -44,7 +44,9 @@ const fetchCartData = async () => {
 
   loading.value = true
   try {
-    await cartStore.fetchCartItems()
+    console.log('开始获取购物车数据...');
+    const response = await cartStore.fetchCartItems()
+    console.log('获取购物车数据响应:', response);
   } catch (error: any) {
     console.error('获取购物车数据失败:', error)
     if (error.response?.status === 403) {
@@ -72,9 +74,15 @@ const handleSelectAll = (val: boolean): void => {
 // 更新商品数量
 const handleQuantityChange = async (cartItemId: string, quantity: number): Promise<void> => {
   try {
-    await cartStore.updateCartItem(cartItemId, quantity)
+    console.log('开始更新购物车商品数量:', {
+      cartItemId,
+      quantity
+    });
+    const response = await cartStore.updateCartItem(cartItemId, quantity)
+    console.log('更新购物车商品数量响应:', response);
     ElMessage.success('更新数量成功')
   } catch (error) {
+    console.error('更新数量失败:', error);
     ElMessage.error('更新数量失败')
   }
 }
@@ -82,10 +90,13 @@ const handleQuantityChange = async (cartItemId: string, quantity: number): Promi
 // 删除商品
 const handleDelete = async (cartItemId: string): Promise<void> => {
   try {
-    await cartStore.deleteCartItem(cartItemId)
+    console.log('开始删除购物车商品:', cartItemId);
+    const response = await cartStore.deleteCartItem(cartItemId)
+    console.log('删除购物车商品响应:', response);
     ElMessage.success('删除成功')
     await fetchCartData()
   } catch (error) {
+    console.error('删除失败:', error);
     ElMessage.error('删除失败')
   }
 }

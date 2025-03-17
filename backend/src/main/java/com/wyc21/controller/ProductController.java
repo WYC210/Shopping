@@ -56,10 +56,10 @@ public class ProductController extends BaseController {
             @RequestParam(required = false) Long categoryId,
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String imageUrl,
-            @RequestParam(defaultValue = "1") int pageNum,
-            @RequestParam(defaultValue = "10") int pageSize) {
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int limit) {
 
-        return productService.getProducts(categoryId, keyword, pageNum, pageSize, imageUrl);
+        return productService.getProducts(categoryId, keyword, page, limit, imageUrl);
     }
 
     @GetMapping("/{id}")

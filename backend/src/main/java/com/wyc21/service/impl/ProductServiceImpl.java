@@ -33,14 +33,14 @@ public class ProductServiceImpl implements ProductService {
         // 验证并修正分页参数
         pageNum = Math.max(1, pageNum); // 页码最小为1
         pageSize = Math.max(1, pageSize); // 每页大小最小为1
-
+        System.out.println(pageNum + pageSize);
         // 计算偏移量
         int offset = (pageNum - 1) * pageSize;
-
+        System.out.println("==================== " + offset);
         // 查询数据
         List<Product> products = productMapper.findProducts(categoryId, keyword, offset, pageSize, imageUrl);
         long total = productMapper.countProducts(categoryId, keyword, imageUrl);
-
+        System.out.println("==================== " + products);
         // 返回分页结果
         return new PageResult<>(products, total, pageNum, pageSize);
     }
@@ -68,11 +68,11 @@ public class ProductServiceImpl implements ProductService {
         String[] categories = product.getCategoryId().split(",");
         String mainCategoryId = null;
         String parentId = null;
-        
+
         for (int i = 0; i < categories.length; i++) {
             String categoryName = categories[i].trim();
             Category existingCategory = productMapper.findCategoryByName(categoryName);
-            
+
             if (existingCategory == null) {
                 // 创建新分类
                 Category newCategory = new Category();
@@ -84,9 +84,9 @@ public class ProductServiceImpl implements ProductService {
                 newCategory.setIsActive(true);
                 newCategory.setCreatedTime(LocalDateTime.now());
                 newCategory.setModifiedTime(LocalDateTime.now());
-                
+
                 productMapper.insertCategory(newCategory);
-                
+
                 if (i == 0) {
                     mainCategoryId = newCategory.getCategoryId();
                 }
@@ -98,7 +98,7 @@ public class ProductServiceImpl implements ProductService {
                 parentId = existingCategory.getCategoryId();
             }
         }
-        
+
         // 设置商品信息
         product.setProductId(String.valueOf(idGenerator.nextId()));
         product.setCategoryId(mainCategoryId);
@@ -107,8 +107,7 @@ public class ProductServiceImpl implements ProductService {
         product.setModifiedTime(LocalDateTime.now());
         product.setRating(new BigDecimal("0"));
         product.setReviewCount(0);
-        
-        
+
         // 插入商品
         productMapper.insertProduct(product);
     }
@@ -141,10 +140,10 @@ public class ProductServiceImpl implements ProductService {
     public PageResult<Product> searchProducts(String keyword, int page, int size) {
         // 计算分页偏移量
         int offset = (page - 1) * size;
-
+        System.out.println("==================== "+offset);
         // 获取匹配的商品列表
         List<Product> products = productMapper.searchProducts(keyword, offset, size);
-
+        System.out.println("==================== " + products);
         // 获取总记录数
         int total = productMapper.countSearchProducts(keyword);
 
@@ -172,7 +171,7 @@ public class ProductServiceImpl implements ProductService {
         review.setCreatedTime(LocalDateTime.now());
         review.setModifiedTime(LocalDateTime.now());
         productMapper.insertReview(review);
-        
+
         // 更新商品的评分和评论数
         Product product = productMapper.findById(review.getProductId());
         if (product != null) {
@@ -193,7 +192,7 @@ public class ProductServiceImpl implements ProductService {
     private BigDecimal calculateNewRating(Product product, BigDecimal newRating) {
         BigDecimal currentRating = product.getRating();
         int currentCount = product.getReviewCount();
-        
+
         return currentRating.multiply(new BigDecimal(currentCount))
                 .add(newRating)
                 .divide(new BigDecimal(currentCount + 1), 1, RoundingMode.HALF_UP);

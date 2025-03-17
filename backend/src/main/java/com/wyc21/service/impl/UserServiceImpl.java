@@ -1,10 +1,9 @@
 package com.wyc21.service.impl;
 
-import java.util.Date;
+
 import java.time.LocalDateTime;
 import java.util.Set;
-import java.util.List;
-import java.util.UUID;
+
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -51,20 +50,16 @@ public class UserServiceImpl implements IUserService {
     @Autowired
     private IpUtil ipUtil;
 
-    @Autowired
-    private CookieUtil cookieUtil;
+
 
     @Autowired
     private SnowflakeIdGenerator snowflakeIdGenerator;
 
-    @Autowired
-    private IdGeneratorMapper idGeneratorMapper;
 
     @Autowired
     private BrowseHistoryMapper browseHistoryMapper;
 
-    @Autowired
-    private RedisTemplate<String, String> redisTemplate;
+   
 
     @Autowired
     private ObjectMapper objectMapper;

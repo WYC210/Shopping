@@ -1,4 +1,3 @@
-
 <template>
   <el-card 
     class="product-card" 
@@ -100,7 +99,7 @@ const handleImageError = (e: Event) => {
 
 .product-image-wrapper {
   width: 100%;
-  height: 200px;
+  height: 160px;
   overflow: hidden;
 }
 
@@ -116,27 +115,27 @@ const handleImageError = (e: Event) => {
 }
 
 .product-info {
-  padding: 16px;
+  padding: 12px;
 }
 
 .product-name {
-  font-size: 16px;
+  font-size: 14px;
   color: #fff;
-  margin: 0 0 8px;
+  margin: 0 0 6px;
   line-height: 1.4;
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
-  height: 44px;
+  height: 38px;
 }
 
 .rating-wrapper {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: 4px;
+  margin-bottom: 8px;
 }
 
 :deep(.el-rate) {
@@ -145,7 +144,7 @@ const handleImageError = (e: Event) => {
 }
 
 :deep(.el-rate__icon) {
-  font-size: 16px;
+  font-size: 14px;
   margin-right: 2px;
 }
 
@@ -158,12 +157,12 @@ const handleImageError = (e: Event) => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .product-price {
-  color: #ff9900;
-  font-size: 20px;
+  color: #0ccf29;
+  font-size: 16px;
   font-weight: bold;
 }
 
@@ -180,28 +179,28 @@ const handleImageError = (e: Event) => {
 
 .product-description {
   color: #999;
-  font-size: 14px;
+  font-size: 12px;
   margin: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
 }
 
 /* 响应式调整 */
 @media (max-width: 768px) {
   .product-image-wrapper {
-    height: 160px;
+    height: 140px;
   }
   
   .product-name {
-    font-size: 14px;
-    height: 40px;
+    font-size: 13px;
+    height: 36px;
   }
   
   .product-price {
-    font-size: 16px;
+    font-size: 14px;
   }
   
   .product-description {

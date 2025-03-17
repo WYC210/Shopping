@@ -48,11 +48,11 @@ defineProps<Props>();
 const carouselItems = ref<CarouselItem[]>([
   { 
     image: 'jilicart.jpeg', 
-    title: '三体' 
+    title: '吉利汽车' 
   },
   { 
     image: 'xiaomiultra.jpeg', 
-    title: '夹克' 
+    title: '小米ultra' 
   },
   {
     image: 'hongqi.jpeg',

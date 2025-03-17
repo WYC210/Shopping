@@ -11,7 +11,7 @@
             :default-active="activeMenu"
             class="profile-menu"
             :collapse="false"
-            background-color="pink"
+           
           >
             <el-menu-item index="overview" @click="switchTab('overview')" class="menu-item">
               <el-icon><User /></el-icon>
@@ -253,11 +253,78 @@
         </section>
       </main>
     </div>
+
+    <!-- 编辑资料对话框 -->
+    <el-dialog
+      v-model="editDialogVisible"
+      title="编辑个人资料"
+      width="500px"
+      destroy-on-close
+    >
+      <el-form :model="editForm" label-width="100px">
+        <el-form-item label="用户名">
+          <el-input v-model="editForm.username" placeholder="请输入用户名" />
+        </el-form-item>
+        <el-form-item label="邮箱">
+          <el-input v-model="editForm.email" placeholder="请输入邮箱" />
+        </el-form-item>
+        <el-form-item label="手机">
+          <el-input v-model="editForm.phone" placeholder="请输入手机号" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="editDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="submitEditForm">确认</el-button>
+        </span>
+      </template>
+    </el-dialog>
+
+    <!-- 修改密码对话框 -->
+    <el-dialog
+      v-model="passwordDialogVisible"
+      title="修改密码"
+      width="500px"
+      destroy-on-close
+    >
+      <el-form :model="passwordForm" label-width="100px">
+        <el-form-item label="原密码" required>
+          <el-input
+            v-model="passwordForm.oldPassword"
+            type="password"
+            show-password
+            placeholder="请输入原密码"
+          />
+        </el-form-item>
+        <el-form-item label="新密码" required>
+          <el-input
+            v-model="passwordForm.newPassword"
+            type="password"
+            show-password
+            placeholder="请输入新密码"
+          />
+        </el-form-item>
+        <el-form-item label="确认新密码" required>
+          <el-input
+            v-model="passwordForm.confirmPassword"
+            type="password"
+            show-password
+            placeholder="请再次输入新密码"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="passwordDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="submitPasswordChange">确认</el-button>
+        </span>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 // import {
 //   User, Setting, List, Timer, Wallet,
 //   ShoppingCart, Star
@@ -266,6 +333,7 @@ import { getRandomQuote } from '@/constants/pageQuotes';
 import HomeHeader from '@/views/Home/components/HomeHeader.vue';
 import { serviceRegistry } from '@/api/index'; 
 import { useRouter } from 'vue-router';
+import { ElMessage } from 'element-plus';
 
 const activeMenu = ref('overview');
 const historyTab = ref('products');
@@ -323,10 +391,12 @@ const browsingHistory = ref<any[]>([]);
 const router = useRouter();
 
 const switchTab = (tab: string) => {
+  console.log('切换到标签页:', tab);
   activeMenu.value = tab;
   if (tab === 'orders') {
     fetchOrders();
   } else if (tab === 'settings') {
+    console.log('正在切换到账号设置页面，准备获取用户信息');
     fetchUserInfo();
   } else if (tab === 'history') {
     fetchBrowseHistory();
@@ -344,7 +414,7 @@ const getCurrentTabTitle = computed(() => {
   return titles[activeMenu.value] || '';
 });
 
-const formatDate = (date: string) => {
+const formatDate = (date: string | Date) => {
   return new Date(date).toLocaleString('zh-CN', {
     year: 'numeric',
     month: '2-digit',
@@ -355,11 +425,11 @@ const formatDate = (date: string) => {
 };
 
 const openEditDrawer = () => {
-  console.log('打开编辑资料抽屉');
+  editDialogVisible.value = true;
 };
 
 const showPasswordDialog = () => {
-  console.log('显示修改密码对话框');
+  passwordDialogVisible.value = true;
 };
 
 const settings = ref({
@@ -367,19 +437,45 @@ const settings = ref({
   smsNotification: false
 });
 
+const editForm = ref({
+  username: '',
+  email: '',
+  phone: ''
+});
+
+const editDialogVisible = ref(false);
+
+const passwordForm = ref({
+  oldPassword: '',
+  newPassword: '',
+  confirmPassword: ''
+});
+
+const passwordDialogVisible = ref(false);
+
 const fetchUserInfo = async () => {
+  console.log('开始获取用户信息...');
   try {
+    // 使用正确的方法名 getProfile
     const response = await serviceRegistry.user.getProfile();
-   
+    console.log('获取到的用户信息:', response);
     
     userInfo.value = {
       username: response.username || '未注册',
       email: response.email || '未设置',
-      phone: String(response.phone || '未设置'),
-      registeredAt: response.createdAt ? formatDate(response.createdAt.toString()) : '未注册'
+      phone: response.phone || '未设置',
+      registeredAt: response.createdTime ? formatDate(response.createdTime) : '未注册'
     };
+    // 同时更新编辑表单的初始值
+    editForm.value = {
+      username: response.username || '',
+      email: response.email || '',
+      phone: response.phone || ''
+    };
+    console.log('用户信息更新成功:', userInfo.value);
   } catch (error) {
     console.error('获取用户信息失败:', error);
+    ElMessage.error('获取用户信息失败');
   }
 };
 
@@ -444,6 +540,57 @@ const goToProductDetail = (productId: string) => {
   const product = JSON.parse(productId); // 解析 productId
   router.push({ name: 'Product', params: { id: product.id } }); // 跳转到商品详细页面
 };
+
+const submitEditForm = async () => {
+  try {
+    console.log('开始更新个人资料...');
+    const response = await serviceRegistry.user.updateProfile({
+      email: editForm.value.email,
+      phone: editForm.value.phone
+    });
+    console.log('更新个人资料响应:', response);
+
+    ElMessage.success('个人资料更新成功');
+    editDialogVisible.value = false;
+    await fetchUserInfo(); // 重新获取用户信息
+  } catch (error) {
+    console.error('更新个人资料失败:', error);
+    ElMessage.error(error instanceof Error ? error.message : '更新失败，请稍后重试');
+  }
+};
+
+const submitPasswordChange = async () => {
+  if (passwordForm.value.newPassword !== passwordForm.value.confirmPassword) {
+    ElMessage.error('两次输入的新密码不一致');
+    return;
+  }
+
+  try {
+    console.log('开始发送修改密码请求...');
+    await serviceRegistry.user.updatePassword({
+      oldPassword: passwordForm.value.oldPassword,
+      newPassword: passwordForm.value.newPassword
+    });
+    
+    ElMessage.success('密码修改成功');
+    passwordDialogVisible.value = false;
+    passwordForm.value = {
+      oldPassword: '',
+      newPassword: '',
+      confirmPassword: ''
+    };
+  } catch (error) {
+    console.error('修改密码失败:', error);
+    ElMessage.error(error instanceof Error ? error.message : '密码修改失败，请稍后重试');
+  }
+};
+
+// 在组件挂载时获取用户信息
+onMounted(() => {
+  if (activeMenu.value === 'settings') {
+    fetchUserInfo();
+  }
+});
 </script>
 
 <style scoped>
@@ -461,12 +608,13 @@ const goToProductDetail = (productId: string) => {
   flex: 1;
   overflow: hidden;
   margin-top: 60px; 
+  background: transparent;
 }
 
 /* 侧边栏 */
 .sidebar {
   width: 220px;
-  background: rgba(53, 26, 74, 0.95);
+  background: transparent;
   padding: 20px;
   overflow-y: auto;
   margin-top: 20px; 
@@ -475,6 +623,7 @@ const goToProductDetail = (productId: string) => {
 .profile-menu ::v-deep .el-menu-item {
   margin-bottom: 10px;
   border-radius: 4px;
+  
 }
 
 /* 主内容区 */
@@ -613,7 +762,7 @@ const goToProductDetail = (productId: string) => {
 }
 
 .menu-item {
-  background: rgba(250, 159, 252, 0.1); 
+  background: rgba(8, 173, 210, 0.642); 
 }
 
 .pagination-container {
@@ -626,5 +775,63 @@ const goToProductDetail = (productId: string) => {
 :deep(.el-pagination) {
   --el-pagination-button-color: var(--el-color-white);
   --el-pagination-hover-color: var(--el-color-primary);
+}
+
+/* 对话框样式 */
+:deep(.el-dialog) {
+  background: rgba(0, 51, 102, 0.9) !important;
+  border: 1px solid rgba(168, 216, 255, 0.2);
+  box-shadow: 0 0 20px rgba(0, 149, 255, 0.3);
+}
+
+:deep(.el-dialog__title) {
+  color: #a8d8ff !important;
+}
+
+:deep(.el-dialog__body) {
+  color: #ffffff !important;
+}
+
+:deep(.el-form-item__label) {
+  color: #a8d8ff !important;
+}
+
+:deep(.el-input__inner) {
+  
+  color: #ffffff !important;
+}
+
+:deep(.el-input__inner:focus) {
+  border-color: #00ffff !important;
+}
+
+/* 修改钱包和历史记录卡片样式 */
+.wallet-section .el-card,
+.history-grid .el-card {
+  background: rgba(0, 51, 102, 0.6) !important;
+  border: none !important;
+  color: #a8d8ff !important;
+}
+
+/* 卡片内部标题样式 */
+.wallet-section .el-card :deep(.el-card__header),
+.history-grid .el-card :deep(.el-card__header) {
+  border-bottom: 1px solid rgba(168, 216, 255, 0.2);
+  color: #ffffff;
+}
+
+/* 交易记录表格样式 */
+.wallet-transactions :deep(.el-table) {
+  background-color: transparent !important;
+  color: #1c1f20 !important;
+}
+
+.wallet-transactions :deep(.el-table tr),
+.wallet-transactions :deep(.el-table th) {
+  background-color: transparent !important;
+}
+
+.wallet-transactions :deep(.el-table td) {
+  border-bottom: 1px solid rgba(168, 216, 255, 0.1);
 }
 </style>
