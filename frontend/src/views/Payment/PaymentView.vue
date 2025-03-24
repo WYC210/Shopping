@@ -50,7 +50,7 @@
         <div class="order-amount">
           <div class="amount-row">
             <span>商品总额</span>
-            <span>¥{{ formatPrice(totalAmount *100) }}</span>
+            <span>¥{{ formatPrice(totalAmount ) }}</span>
           </div>
           <div class="amount-row">
             <span>运费</span>
@@ -126,11 +126,11 @@ const fetchOrderDetail = async () => {
         productId: orderDetail.orderId,
         productName: '订单商品',
         quantity: 1,
-        price: orderDetail.totalAmount *100
+        price: orderDetail.totalAmount 
       }]
 
       // 设置总金额
-      totalAmount.value = orderDetail.totalAmount *100
+      totalAmount.value = orderDetail.totalAmount 
 
       
     } else {
@@ -148,7 +148,7 @@ const fetchOrderDetail = async () => {
 // 格式化价格 - 修改为处理分转元
 const formatPrice = (price: number): string => {
   // 将分转换为元并保留两位小数
-  return (price / 100).toFixed(2)
+  return (price ).toFixed(2)
 }
 
 // 选择支付方式

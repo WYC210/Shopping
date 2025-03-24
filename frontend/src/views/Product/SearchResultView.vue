@@ -5,7 +5,7 @@ import { productService } from '@/api/modules/product';
 import type { Product, ProductResponse } from '@/types/api/product';
 import ProductCard from '@/views/Home/components/ProductCard.vue';
 import HomeHeader from '@/views/Home/components/HomeHeader.vue';
-// import { Search } from '@element-plus/icons-vue';
+
 import { getRandomQuote } from '@/constants/pageQuotes';
 
 const route = useRoute();
@@ -55,11 +55,14 @@ const searchProducts = async (keyword: string) => {
     console.log('执行搜索请求，关键词:', keyword);
     const response: ProductResponse = await productService.searchProducts({
       keyword: keyword,
-      page: 1, // 添加分页参数
-      size: 10 // 添加分页参数
-    }) as unknown as ProductResponse; 
+      pageNum: 1,
+      pageSize: 10
+    }) as unknown as ProductResponse;
     console.log('搜索结果:', response);
-    products.value = response.list; 
+    products.value = response.list.map(product => ({
+      ...product,
+      imageUrl: product.imageUrl || '/images/default-product.jpg'
+    }));
   } catch (error) {
     console.error('搜索失败:', error);
   } finally {

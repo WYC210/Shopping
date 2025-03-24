@@ -5,17 +5,18 @@ export interface Product {
   name: string;
   price: number;
   description?: string;
-  category: string;
+  category?: string;
   imageUrl: string;
   sales?: number;
   createTime?: string;
   stock: number;
   status: number;
-  rating: number;
-  reviewCount: number;
+  isActive?: number;
+  rating?: number;
+  reviewCount?: number;
   tags: string;
-
-  
+  categoryId: string;
+  brand: string;
 }
 
 export interface ProductResponse {
@@ -25,6 +26,7 @@ export interface ProductResponse {
   pageNum: number;
   pageSize: number;
   pages: number;
+  categoryId?: string;
 }
 
 export interface PaginationParams {

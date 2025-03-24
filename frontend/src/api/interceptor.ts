@@ -15,7 +15,6 @@ instance.interceptors.request.use(
     if (userStore.accessToken) {
       config.headers.Authorization = `Bearer ${userStore.accessToken}`;
     }
-   
     return config;
   },
   (error) => {

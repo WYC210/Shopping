@@ -118,10 +118,7 @@ public class OrderServiceImpl implements IOrderService {
         // 创建订单
         Order order = createOrderFromItems(userId, cartItems);
 
-        // // 从购物车中删除已购买的商品
-        // for (String cartItemId : cartItemIds) {
-        //     cartService.deleteCartItem(userId, cartItemId);
-        // }
+     
 
         return order;
     }
@@ -339,51 +336,47 @@ public class OrderServiceImpl implements IOrderService {
         return false;
     }
 
-    @Override
-    @Scheduled(fixedDelay = 1000000) // 每10分钟检查一次
     @Transactional
     public void checkExpiredOrders() {
+        try {
+            // 获取所有过期未支付的订单
+            List<Order> expiredOrders = orderMapper.findExpiredOrders(LocalDateTime.now());
+            log.info("找到{}个过期订单", expiredOrders.size());
 
-        if (!isDatabaseInitialized()) {
-            log.warn("数据库尚未初始化，跳过过期订单检查");
-            return;
-        }
-        // 获取所有过期未支付的订单
-        List<Order> expiredOrders = orderMapper.findExpiredOrders(LocalDateTime.now());
-        log.info("找到{}个过期订单", expiredOrders.size());
+            for (Order order : expiredOrders) {
+                try {
+                    log.info("处理过期订单，订单ID: {}, 当前版本号: {}", order.getOrderId(), order.getVersion());
 
-        for (Order order : expiredOrders) {
-            try {
-                log.info("处理过期订单，订单ID: {}, 当前版本号: {}", order.getOrderId(), order.getVersion());
+                    // 更新订单状态为过期
+                    order.setStatus(OrderStatus.EXPIRED);
+                    order.setModifiedTime(LocalDateTime.now());
+                    order.setModifiedUser("system");
 
-                // 更新订单状态为过期
-                order.setStatus(OrderStatus.EXPIRED);
+                    // 更新数据库
+                    int updated = orderMapper.updateOrder(order);
+                    if (updated > 0) {
+                        log.info("订单状态已更新为过期: {}", order.getOrderId());
 
-                order.setModifiedTime(LocalDateTime.now());
-                order.setModifiedUser("system");
+                        // 恢复库存
+                        List<OrderItem> orderItems = orderMapper.findOrderItems(order.getOrderId());
+                        for (OrderItem item : orderItems) {
+                            productMapper.increaseStock(item.getProductId(), item.getQuantity());
+                        }
 
-                // 更新数据库
-                int updated = orderMapper.updateOrder(order);
-                if (updated > 0) {
-                    log.info("订单状态已更新为过期: {}", order.getOrderId());
+                        // 删除Redis中的key
+                        String orderKey = "order:" + order.getOrderId();
+                        redisTemplate.delete(orderKey);
 
-                    // 恢复库存
-                    List<OrderItem> orderItems = orderMapper.findOrderItems(order.getOrderId());
-                    for (OrderItem item : orderItems) {
-                        productMapper.increaseStock(item.getProductId(), item.getQuantity());
+                        log.info("订单{}已过期，库存已恢复", order.getOrderId());
+                    } else {
+                        log.error("更新订单状态失败: {}", order.getOrderId());
                     }
-
-                    // 删除Redis中的key
-                    String orderKey = "order:" + order.getOrderId();
-                    redisTemplate.delete(orderKey);
-
-                    log.info("订单{}已过期，库存已恢复", order.getOrderId());
-                } else {
-                    log.error("更新订单状态失败: {}", order.getOrderId());
+                } catch (Exception e) {
+                    log.error("处理过期订单失败: {}", order.getOrderId(), e);
                 }
-            } catch (Exception e) {
-                log.error("处理过期订单失败: {}", order.getOrderId(), e);
             }
+        } catch (Exception e) {
+            log.error("检查过期订单时发生错误", e);
         }
     }
 

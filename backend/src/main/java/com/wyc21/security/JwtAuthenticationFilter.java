@@ -10,7 +10,7 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.beans.factory.annotation.Autowired;
-import com.wyc21.util.JwtTokenUtil; // 修改为正确的import
+import com.wyc21.util.JwtTokenUtil; 
 import java.io.IOException;
 import lombok.extern.slf4j.Slf4j;
 import com.wyc21.util.JsonResult;
@@ -32,31 +32,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain filterChain) throws ServletException, IOException {
 
-        // 获取请求路径
-        String path = request.getRequestURI();
-        log.info("请求路径: {}", path);
-
-        // 获取并输出所有请求头
-        log.info("===== 请求头信息 =====");
-        Collections.list(request.getHeaderNames()).forEach(headerName -> {
-            log.info("{}: {}", headerName, request.getHeader(headerName));
-        });
+    
 
         try {
             String token = extractToken(request);
             
             if (token != null) {
-                // 判断是否是刷新令牌
-                boolean isRefreshToken = isRefreshToken(request);
-                log.info("是否为刷新令牌请求: {}", isRefreshToken);
+            
 
-                log.info("开始验证token...");
+             
                 Claims claims = jwtTokenUtil.validateToken(token);
 
                 if (claims != null) {
-                    log.info("token验证成功，claims: {}", claims);
+                 
                     String userId = jwtTokenUtil.getUserIdFromToken(token);
-                    log.info("解析出的用户ID: {}", userId);
+                  
 
                     // 创建认证对象
                     UsernamePasswordAuthenticationToken authentication = 
@@ -64,7 +54,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                     request.setAttribute("uid", userId);
-                    log.info("已设置认证信息和uid属性");
+                  
                 }
             }
             

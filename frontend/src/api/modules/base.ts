@@ -35,31 +35,36 @@ export class BaseApiService<T = any> { // 添加泛型
    * @param config axios 配置
    * @returns Promise 包装的响应数据
    */
-  protected async request<D = T>(config: RequestConfig): Promise<D> {
-    const fullConfig: AxiosRequestConfig = {
-      ...config,
-      url: config.url.startsWith('http') 
-        ? config.url 
-        : `${this.baseUrl}${config.url}`,
-      headers: {
-        ...config.headers,
-        'X-Device-Fingerprint': await fingerprintManager.getFingerprint() // 添加浏览器指纹
-      }
-    };
-    
+  protected async request<T>({
+    method = 'GET',
+    url = '',
+    data = null,
+    params = null,
+    headers = {}
+  }: RequestConfig): Promise<T> {
     try {
-      const response = await this.httpClient.request<D>(fullConfig);
-     
+      // 合并默认headers和传入的headers
+      const defaultHeaders = {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Content-Type': 'application/json'
+      };
       
-      // 检查 HTTP 状态码
-      if (response.status !== 200) {
-        throw new Error(`HTTP Error: ${response.status}`);
-      }
+      const response = await this.httpClient.request({
+        method,
+        url: url.startsWith('http') ? url : `${this.baseUrl}${url}`,
+        data,
+        params,
+        headers: { ...defaultHeaders, ...headers }
+      });
 
-      // 直接返回响应数据
       return response.data;
     } catch (error) {
-      console.error(`[API Error] ${fullConfig.url}`, error);
+      // 处理401错误
+      if (error.response?.status === 401) {
+        // 可以在这里处理token过期的情况，比如跳转到登录页
+        window.location.href = '/login';
+        throw new Error('请先登录');
+      }
       throw error;
     }
   }

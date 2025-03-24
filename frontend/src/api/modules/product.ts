@@ -3,13 +3,14 @@ import { BaseApiService } from './base';
 import { httpClient } from '@/utils/request';
 import type { Product, ProductResponse, PaginationParams } from '@/types/api/product';
 
-interface ProductSearchParams extends PaginationParams {
+interface ProductSearchParams {
   pageNum?: number;
   pageSize?: number;
   keyword?: string;
   categoryId?: string | null;
   sortField?: string;
   sortOrder?: string;
+  imageUrl?: string;
 }
 
 interface ProductDetailParams {
@@ -75,12 +76,22 @@ export class ProductService extends BaseApiService<Product> {
   /**
    * 获取所有商品列表
    */
-  async getProducts(params?: PaginationParams, headers?: Record<string, string>): Promise<ProductResponse> {
+  async getProducts(params?: ProductSearchParams): Promise<ProductResponse> {
+    const queryParams = new URLSearchParams();
+    
+    // 修改分页参数名称
+    if (params?.pageNum) queryParams.append('pageNum', params.pageNum.toString());
+    if (params?.pageSize) queryParams.append('pageSize', params.pageSize.toString());
+    
+    // 添加其他查询参数
+    if (params?.keyword) queryParams.append('keyword', params.keyword);
+    if (params?.categoryId) queryParams.append('categoryId', params.categoryId);
+    if (params?.sortField) queryParams.append('sortField', params.sortField);
+    if (params?.sortOrder) queryParams.append('sortOrder', params.sortOrder);
+
     return this.request<ProductResponse>({
       method: 'GET',
-      url: '', // 这里是获取所有商品的接口
-      params, // 传递分页和其他参数
-      headers // 传递请求头
+      url: `?${queryParams.toString()}`
     });
   }
 
@@ -149,12 +160,29 @@ export class ProductService extends BaseApiService<Product> {
   /**
    * 更新商品
    */
-  async updateProduct(data: ProductData & { id: string }): Promise<any> {
-    if (!data.id) throw new Error('商品ID不能为空');
+  async updateProduct(data: {
+    productId: string;
+    name?: string;
+    price?: number;
+    stock?: number;
+    description?: string;
+    brand?: string;
+    tags?: string;
+    imageUrl?: string;
+    status?: number;  // 添加 status 字段
+  }): Promise<any> {
+    if (!data.productId) {
+      throw new Error('商品ID不能为空');
+    }
+
     return this.request({
       url: '/update',
       method: 'PUT',
-      data
+      data,
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,  // 添加认证头
+        'Content-Type': 'application/json'
+      }
     });
   }
 
@@ -164,7 +192,7 @@ export class ProductService extends BaseApiService<Product> {
   async deactivateProduct(productId: string): Promise<any> {
     if (!productId) throw new Error('商品ID不能为空');
     return this.request({
-      url: `/deactivate/${productId}`,
+      url: `/${productId}`,
       method: 'PUT'
     });
   }
@@ -175,7 +203,7 @@ export class ProductService extends BaseApiService<Product> {
   async activateProduct(productId: string): Promise<any> {
     if (!productId) throw new Error('商品ID不能为空');
     return this.request({
-      url: `/activate/${productId}`,
+      url: `/create/${productId}`,
       method: 'PUT'
     });
   }
@@ -194,7 +222,7 @@ export class ProductService extends BaseApiService<Product> {
   /**
    * 搜索商品
    */
-  async searchProducts(params: string | { keyword: string; page?: number; size?: number }) {
+  async searchProducts(params: string | { keyword: string; pageNum?: number; pageSize?: number }) {
     // 如果参数是字符串，转换为对象格式
     const searchParams = typeof params === 'string' 
       ? { keyword: params }
@@ -308,9 +336,9 @@ export class ProductService extends BaseApiService<Product> {
     });
   }
 
-  async getAllProducts(params: { page: number; size: number }) {
+  async getAllProducts(params: { page: number; size: number; categoryId?: string }): Promise<ProductResponse> {
     const response = await httpClient.get('/products/all', { params });
-    return response.data; // 根据您的 API 返回结构调整
+    return response.data; // Adjust based on your API response structure
   }
 }
 

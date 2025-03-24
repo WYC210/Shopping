@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref,  onMounted, watch, onUnmounted } from "vue";
-import { useRouter } from "vue-router";
+import { ref,  onMounted, watch, onUnmounted, computed } from "vue";
+import { useRouter, useRoute } from "vue-router";
 import { ElMessage } from "element-plus";
 import type { Product } from "@/types/api/product";
 import { productService } from "@/api/modules/product";
@@ -8,11 +8,12 @@ import { categoryService } from "@/api/modules/category";
 import errorImage from '@/assets/logo_w.png';
 
 import HomeHeader from '@/views/Home/components/HomeHeader.vue'
+import { List, ArrowDown } from "@element-plus/icons-vue";
 
 interface ProductParams {
   pageNum: number;
   pageSize: number;
-  sortBy: 'default' | 'price' | 'time' | 'sales'; 
+  sortBy: string;
   order: 'asc' | 'desc';  
 }
 
@@ -32,13 +33,20 @@ interface FilterParams {
   keyword?: string;
 }
 
+// 修改 categories 的类型定义以支持子分类
+interface Category {
+  categoryId: string;
+  name: string;
+  children?: Category[];
+}
+
 // 状态定义
 const router = useRouter();
 const products = ref<Product[]>([]);
 const loading = ref(false);
 const hasMore = ref(true);
 const loadingMore = ref(false);
-const categories = ref<{ id: string; name: string }[]>([]);
+const categories = ref<Category[]>([]);
 
 // 分页和排序参数
 const productParams = ref<ProductParams>({
@@ -84,11 +92,99 @@ const filterParams = ref<FilterParams>({
   hasDiscount: false
 });
 
-
-
 // 创建观察器
 const observer = ref<IntersectionObserver | null>(null);
 const loadMoreTrigger = ref<HTMLElement | null>(null);
+
+// 添加一个计算属性来处理筛选和排序
+const filteredProducts = computed(() => {
+  let result = [...products.value];
+
+  // 应用价格筛选
+  if (filterParams.value.minPrice !== undefined) {
+    result = result.filter(product => product.price >= filterParams.value.minPrice!);
+  }
+  if (filterParams.value.maxPrice !== undefined) {
+    result = result.filter(product => product.price <= filterParams.value.maxPrice!);
+  }
+
+  // 应用库存筛选
+  if (filterParams.value.hasStock) {
+    result = result.filter(product => product.stock > 0);
+  }
+
+  // 应用排序
+  const [sortField, sortOrder] = productParams.value.sortBy.split('-');
+  if (sortField !== 'default') {
+    result.sort((a, b) => {
+      let comparison = 0;
+      switch (sortField) {
+        case 'price':
+          comparison = a.price - b.price;
+          break;
+        case 'time':
+          comparison = new Date(a.createTime || '').getTime() - new Date(b.createTime || '').getTime();
+          break;
+        case 'sales':
+          comparison = (a.reviewCount || 0) - (b.reviewCount || 0);
+          break;
+      }
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+  }
+
+  return result;
+});
+
+// 获取分类数据
+const fetchCategories = async () => {
+  try {
+    const response = await categoryService.getCategoryTree();
+    categories.value = response.data;
+  } catch (error) {
+    ElMessage.error('获取分类失败');
+    console.error(error);
+  }
+};
+
+// 处理分类选择
+const handleCategoryChange = async (value: string[]) => {
+  // 获取最后一个选中的分类ID（最深层级的分类）
+  const selectedCategoryId = value[value.length - 1];
+  productParams.value.pageNum = 1;
+  filterParams.value.categoryId = selectedCategoryId || null;
+  products.value = []; // 清空现有商品列表
+  await fetchProducts();
+};
+
+// 当前选中的分类路径
+const selectedCategoryPath = ref<string[]>([]);
+
+// 监听路由变化，更新选中的分类
+watch(() => useRoute().query.category, (newCategoryId) => {
+  if (newCategoryId) {
+    // 找到分类的完整路径
+    const findCategoryPath = (categories: Category[], targetId: string, path: string[] = []): string[] | null => {
+      for (const category of categories) {
+        if (category.categoryId === targetId) {
+          return [...path, category.categoryId];
+        }
+        if (category.children) {
+          const foundPath = findCategoryPath(category.children, targetId, [...path, category.categoryId]);
+          if (foundPath) return foundPath;
+        }
+      }
+      return null;
+    };
+    
+    const path = findCategoryPath(categories.value, newCategoryId as string);
+    if (path) {
+      selectedCategoryPath.value = path;
+    }
+  } else {
+    selectedCategoryPath.value = [];
+  }
+}, { immediate: true });
 
 // 修改获取商品列表函数
 const fetchProducts = async (isLoadMore = false) => {
@@ -100,37 +196,34 @@ const fetchProducts = async (isLoadMore = false) => {
     }
 
     const requestParams = {
-      page: productParams.value.pageNum,
-      size: productParams.value.pageSize,
+      pageNum: productParams.value.pageNum,
+      pageSize: productParams.value.pageSize,
       categoryId: filterParams.value.categoryId || undefined,
       keyword: filterParams.value.keyword || undefined,
       imageUrl: undefined
     };
-    console.log('请求商品列表:', requestParams);
     
     const response = await productService.getProducts(requestParams);
     console.log('响应商品列表:', response);
     
+    // 适配响应数据
     const newProducts = response.list.map(product => ({
       ...product,
       imageUrl: product.imageUrl ? `http://localhost:8088/products${product.imageUrl}` : errorImage
     }));
 
-    // 如果是加载更多，则拼接数据
     if (isLoadMore) {
       products.value = [...products.value, ...newProducts];
     } else {
       products.value = newProducts;
     }
 
-    // 更新是否还有更多数据
-    hasMore.value = response.total > products.value.length;
-    
     // 更新分页信息
+    hasMore.value = response.total > products.value.length;
     pagination.value = {
       total: response.total,
       pageSize: productParams.value.pageSize,
-      currentPage: productParams.value.pageNum
+      currentPage: response.pageNum // 使用响应中的 pageNum
     };
 
   } catch (error) {
@@ -170,16 +263,11 @@ const setupObserver = () => {
   }
 };
 
-// 处理排序变化
+// 修改排序处理函数
 const handleSortChange = (value: string) => {
-  const [field, order] = value.split('-');
-  productParams.value.sortBy = field as 'default' | 'price' | 'time' | 'sales';
-  productParams.value.order = (order || 'desc') as 'asc' | 'desc';
-  productParams.value.pageNum = 1; // 重置页码
-  fetchProducts();
+  productParams.value.sortBy = value;
+  // 不再调用 fetchProducts
 };
-
-
 
 // 跳转到商品详情
 const goToDetail = (productId: string) => {
@@ -196,11 +284,12 @@ const handleImageError = (product: Product) => {
   product.imageUrl = errorImage;
 };
 
-// 修改分类筛选处理函数
-const handleFilterChange = (categoryId: string | null) => {
+// 修改筛选处理函数
+const handleFilterChange = async (categoryId: string | null) => {
+  productParams.value.pageNum = 1;
   filterParams.value.categoryId = categoryId;
-  productParams.value.pageNum = 1; // 重置页码
-  fetchProducts(); // 使用前端筛选替代重新请求
+  products.value = []; // 清空现有商品列表
+  await fetchProducts();
 };
 
 // 修改价格区间处理函数
@@ -214,7 +303,7 @@ const handlePriceRangeChange = (range: string | null) => {
     filterParams.value.minPrice = undefined;
     filterParams.value.maxPrice = undefined;
   }
-  fetchProducts(); // 使用前端筛选
+  // 不再调用 fetchProducts
 };
 
 // 处理自定义价格范围
@@ -223,37 +312,20 @@ const handleCustomPriceRange = () => {
     filterParams.value.minPrice = customPriceMin.value;
     filterParams.value.maxPrice = customPriceMax.value;
     filterParams.value.priceRange = `${customPriceMin.value}-${customPriceMax.value}`;
-    fetchProducts();
+    // 不再调用 fetchProducts
   }
 };
 
-// 获取分类数据
-const fetchCategories = async () => {
-  try {
-    const response = await categoryService.getCategoryTree();
-    categories.value = response.data;
- 
-    
-  } catch (error) {
-    ElMessage.error('获取分类失败');
-    console.error(error);
-  }
-};
-
-// 监听筛选条件变化
-watch(
-  [filterParams, () => productParams.value.sortBy],
-  () => {
-    productParams.value.pageNum = 1; // 重置页码
-    hasMore.value = true; // 重置加载更多状态
-    fetchProducts();
-  },
-  { deep: true }
-);
-
+// 组件挂载时获取商品和分类
 onMounted(() => {
   fetchCategories();
-  fetchProducts();
+  
+  // 获取 URL 中的分类 ID
+  const route = useRoute();
+  const categoryId = route.query.category as string; // 获取分类ID
+  filterParams.value.categoryId = categoryId || null; // 设置筛选参数中的分类ID
+  
+  fetchProducts(); // 获取商品列表
   setupObserver();
 });
 
@@ -261,6 +333,46 @@ onMounted(() => {
 onUnmounted(() => {
   if (observer.value) {
     observer.value.disconnect();
+  }
+});
+
+// 添加到现有的 script 中
+const showSubCategories = ref<string | null>(null);
+let mouseLeaveTimer: NodeJS.Timeout | null = null;
+
+// 处理父分类鼠标进入
+const handleCategoryMouseEnter = (categoryId: string) => {
+  if (mouseLeaveTimer) {
+    clearTimeout(mouseLeaveTimer);
+    mouseLeaveTimer = null;
+  }
+  showSubCategories.value = categoryId;
+};
+
+// 处理父分类鼠标离开
+const handleCategoryMouseLeave = () => {
+  mouseLeaveTimer = setTimeout(() => {
+    showSubCategories.value = null;
+  }, 200);
+};
+
+// 处理子分类鼠标进入
+const handleSubCategoriesMouseEnter = () => {
+  if (mouseLeaveTimer) {
+    clearTimeout(mouseLeaveTimer);
+    mouseLeaveTimer = null;
+  }
+};
+
+// 处理子分类鼠标离开
+const handleSubCategoriesMouseLeave = () => {
+  showSubCategories.value = null;
+};
+
+// 组件卸载时清理定时器
+onUnmounted(() => {
+  if (mouseLeaveTimer) {
+    clearTimeout(mouseLeaveTimer);
   }
 });
 </script>
@@ -286,7 +398,7 @@ onUnmounted(() => {
       </el-select>
     </div>
 
-    <!-- 在排序选项下方添加筛选条件栏 -->
+    <!-- 重新设计的分类筛选栏 -->
     <div class="filter-bar">
       <!-- 分类筛选 -->
       <div class="filter-group">
@@ -298,17 +410,43 @@ onUnmounted(() => {
           >
             全部
           </el-tag>
-          <el-tag
-            v-for="category in categories"
-            :key="category.id"
-            :class="{ active: filterParams.categoryId === category.id }"
-            @click="handleFilterChange(category.id)"
-          >
-            {{ category.name }}
-          </el-tag>
+          <template v-for="category in categories" :key="category.categoryId">
+            <!-- 父分类 -->
+            <div class="category-item" 
+              @mouseenter="handleCategoryMouseEnter(category.categoryId)"
+              @mouseleave="handleCategoryMouseLeave"
+            >
+              <el-tag
+                :class="{ 
+                  active: filterParams.categoryId === category.categoryId,
+                  'has-children': category.children?.length
+                }"
+                @click="handleFilterChange(category.categoryId)"
+              >
+                {{ category.name }}
+                <el-icon v-if="category.children?.length" class="arrow"><ArrowDown /></el-icon>
+              </el-tag>
+              
+              <!-- 子分类弹出层 -->
+              <div v-if="category.children?.length && showSubCategories === category.categoryId" 
+                class="sub-categories"
+                @mouseenter="handleSubCategoriesMouseEnter"
+                @mouseleave="handleSubCategoriesMouseLeave"
+              >
+                <el-tag
+                  v-for="subCategory in category.children"
+                  :key="subCategory.categoryId"
+                  :class="{ active: filterParams.categoryId === subCategory.categoryId }"
+                  @click="handleFilterChange(subCategory.categoryId)"
+                >
+                  {{ subCategory.name }}
+                </el-tag>
+              </div>
+            </div>
+          </template>
         </div>
       </div>
-
+      
       <!-- 价格区间筛选 -->
       <div class="filter-group">
         <div class="filter-label">价格：</div>
@@ -357,7 +495,7 @@ onUnmounted(() => {
     <!-- 商品列表 -->
     <el-row v-loading="loading" :gutter="20">
       <el-col
-        v-for="product in products"
+        v-for="product in filteredProducts"
         :key="product.productId"
         :xs="12"
         :sm="8"
@@ -672,7 +810,7 @@ onUnmounted(() => {
   }
 }
 
-/* 添加筛选栏样式 */
+/* 更新筛选栏样式 */
 .filter-bar {
   background: rgba(255, 255, 255, 0.05);
   border-radius: 10px;
@@ -682,16 +820,9 @@ onUnmounted(() => {
 
 .filter-group {
   display: flex;
-  align-items: flex-start;
   margin-bottom: 15px;
   padding-bottom: 15px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.filter-group:last-child {
-  margin-bottom: 0;
-  padding-bottom: 0;
-  border-bottom: none;
 }
 
 .filter-label {
@@ -705,16 +836,35 @@ onUnmounted(() => {
   flex: 1;
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  align-items: center;
+  gap: 12px;
+}
+
+.category-item {
+  position: relative;
 }
 
 .el-tag {
   cursor: pointer;
+  padding: 0 15px;
+  height: 32px;
+  line-height: 30px;
   background: transparent;
   border-color: rgba(255, 255, 255, 0.2);
   color: var(--starlight);
   transition: all 0.3s ease;
+}
+
+.el-tag.has-children {
+  padding-right: 25px;
+}
+
+.el-tag .arrow {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 12px;
+  transition: transform 0.3s;
 }
 
 .el-tag:hover,
@@ -724,39 +874,31 @@ onUnmounted(() => {
   color: white;
 }
 
-.custom-price-range {
+/* 子分类弹出层样式 */
+.sub-categories {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 8px;
+  padding: 10px;
+  background: rgba(6, 5, 36, 0.95);
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 200px;
+  z-index: 10;
 }
 
-.custom-price-range .el-input-number {
-  width: 120px;
-}
-
-/* 确保复选框文字颜色正确 */
-:deep(.el-checkbox__label) {
-  color: var(--starlight);
-}
-
-/* 响应式布局 */
-@media (max-width: 768px) {
-  .filter-group {
-    flex-direction: column;
-  }
-
-  .filter-label {
-    width: 100%;
-    margin-bottom: 10px;
-  }
-
-  .custom-price-range {
-    flex-wrap: wrap;
-  }
-}
-
-.mb-3 {
-  margin-bottom: 12px;
+/* 添加一个空白区域来防止鼠标移动时菜单消失 */
+.sub-categories::after {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 0;
+  right: 0;
+  height: 8px;
 }
 
 .load-more {

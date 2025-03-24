@@ -21,6 +21,8 @@ public class Product extends BaseEntity {
    
     private String categoryId; // 改为String类型
 
+    private LocalDateTime modifiedTime;
+
     public void setIsActive(Integer isActive) {
         this.isActive = isActive;
     }

@@ -66,6 +66,7 @@ import type { Category } from "@/types/store/HomeType";
 import { useRouter } from "vue-router";
 import { categoryService } from "@/api/modules/category"
 import { Grid, FolderOpened } from '@element-plus/icons-vue';
+import { productService } from "@/api/modules/product"
 
 interface Props {
   contentHeight: string | number;
@@ -76,7 +77,7 @@ const emit = defineEmits<{
 }>();
 
 // 使用 Pinia 状态管理
-const categories = ref<Category[]>([]);  // 改为本地 ref 而不是 computed
+const categories = ref<Category[]>([]); 
 const loading = ref(false);
 const activeCategory = ref<Category | null>(null);
 const activeIndex = ref('all');
@@ -102,15 +103,11 @@ const fetchCategories = async () => {
 const handleSubCategoryClick = (category: Category) => {
   activeIndex.value = category.categoryId.toString();
   router.push({
-    path: '/products',
+    path: '/productsList',
     query: { category: category.categoryId.toString() }
   });
   emit('category-change', category);
 };
-
-
-
-
 
 // 子菜单离开
 const handleSubmenuLeave = () => {

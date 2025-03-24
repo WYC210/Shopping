@@ -12,7 +12,6 @@
           v-model="searchKeyword"
           placeholder="搜索商品..."
           class="search-input"
-          :class="{ 'is-expanded': isSearchExpanded }"
           @focus="isSearchExpanded = true"
           @blur="handleSearchBlur"
           @keyup.enter="handleSearch"
@@ -56,6 +55,14 @@
       <nav class="nav-menu">
         <router-link to="/" class="nav-item">首页</router-link>
         <router-link to="/productsList" class="nav-item">商品</router-link>
+        <router-link 
+          v-if="showManageButton" 
+          to="/product/manage" 
+          class="nav-item manage-link"
+        >
+          <el-icon><Setting /></el-icon>
+          商品管理
+        </router-link>
         <router-link v-if="showManageButton" to="/orderlist" class="nav-item">
           我的订单
         </router-link>
@@ -102,17 +109,16 @@
   </header>
 </template>
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, inject } from "vue";
-import { useRouter } from "vue-router";
-import { ShoppingCart, Search, Loading } from "@element-plus/icons-vue";
+import { ref, onMounted, onUnmounted, inject, computed } from "vue";
+import { useRouter, useRoute } from "vue-router";
+import { ShoppingCart, Search, Loading, Setting } from "@element-plus/icons-vue";
 import { useUserStore } from "@/types/store/user";
 import { useCartStore } from "@/types/store/cart";
 import { ElMessage } from 'element-plus';
 import defaultAvatar from '@/assets/logo_w.png';
 
-
-
 const router = useRouter();
+const route = useRoute();
 const userStore = useUserStore();
 const cartStore = useCartStore();
 const isScrolled = ref(false);
@@ -134,8 +140,6 @@ const hotSearches = [
   '品牌精选',
   '今日推荐'
 ];
-
-
 
 const isSearching = ref(false);
 const noResults = ref(false);
@@ -555,5 +559,20 @@ defineExpose({
   to {
     transform: rotate(360deg);
   }
+}
+
+.manage-link {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--cosmic-blue);
+}
+
+.manage-link:hover {
+  color: var(--aurora-pink);
+}
+
+.manage-link .el-icon {
+  font-size: 16px;
 }
 </style>

@@ -86,6 +86,15 @@ const router = createRouter({
       meta: {
         title: '搜索结果'
       }
+    },
+    {
+      path: '/product/manage',
+      name: 'ProductManage',
+      component: () => import('@/views/Product/ProductManageView.vue'),
+      meta: {
+        requiresAuth: true,
+        requiresAdmin: true
+      }
     }
   ],
 })
@@ -96,9 +105,7 @@ const authRoutes = ['/cart', '/orders', '/profile']
 router.beforeEach((to, from, next) => {
   const userStore = useUserStore()
   
-  // 检查是否是需要登录的路由
   if (authRoutes.some(path => to.path.startsWith(path))) {
-    // 如果未登录，重定向到登录页
     if (!userStore.isLoggedIn) {
       next({
         path: '/login',
@@ -108,7 +115,6 @@ router.beforeEach((to, from, next) => {
     }
   }
   
-  // 添加页面进入特效
   document.documentElement.classList.add('page-transition')
   setTimeout(() => {
     document.documentElement.classList.remove('page-transition')

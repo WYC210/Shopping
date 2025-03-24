@@ -56,9 +56,10 @@ public class ProductController extends BaseController {
             @RequestParam(required = false) Long categoryId,
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String imageUrl,
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int limit) {
-
+            @RequestParam(name = "pageNum", defaultValue = "1") int page,
+            @RequestParam(name = "pageSize", defaultValue = "10") int limit) {
+        log.info("Fetching products - categoryId: {}, keyword: {}, page: {}, size: {}",
+                categoryId, keyword, page, limit);
         return productService.getProducts(categoryId, keyword, page, limit, imageUrl);
     }
 
@@ -164,7 +165,7 @@ public class ProductController extends BaseController {
     }
 
     // 下架商品
-    @PutMapping("/deactivate/{productId}")
+    @DeleteMapping("/{productId}")
     public ResponseEntity<?> deactivateProduct(@PathVariable String productId) {
         productService.deactivateProduct(productId);
         return ResponseEntity.ok("商品已下架");

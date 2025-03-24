@@ -128,7 +128,7 @@
         AND is_deleted = 0
     </select>
 
-    <delete id="deleteProduct" parameterType= "com.wyc21.entity.Product">
+    <delete id="deleteProduct" parameterType="String">
         DELETE FROM wz_products
         WHERE product_id = #{productId}
     </delete>
@@ -201,7 +201,15 @@
     )
 </insert>
 
-<!-- 更新商品（动态更新非空字段） -->
+<!-- 更新商品状态的专用方法 -->
+<update id="updateProductStatus">
+    UPDATE wz_products
+    SET is_active = #{isActive},
+        modified_time = #{modifiedTime}
+    WHERE product_id = #{productId}
+</update>
+
+<!-- 更新商品 -->
 <update id="updateProduct" parameterType="com.wyc21.entity.Product">
     UPDATE wz_products
     <set>
@@ -216,7 +224,6 @@
         <if test="reviewCount != null">review_count = #{reviewCount},</if>
         <if test="imageUrl != null">image_url = #{imageUrl},</if>
         <if test="isActive != null">is_active = #{isActive},</if>
-        modified_user = #{modifiedUser},
         modified_time = #{modifiedTime}
     </set>
     WHERE product_id = #{productId}

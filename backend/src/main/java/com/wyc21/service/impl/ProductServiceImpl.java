@@ -33,14 +33,14 @@ public class ProductServiceImpl implements ProductService {
         // 验证并修正分页参数
         pageNum = Math.max(1, pageNum); // 页码最小为1
         pageSize = Math.max(1, pageSize); // 每页大小最小为1
-        System.out.println(pageNum + pageSize);
+        log.info("categoryId: {}", categoryId);
         // 计算偏移量
         int offset = (pageNum - 1) * pageSize;
-        System.out.println("==================== " + offset);
+       
         // 查询数据
         List<Product> products = productMapper.findProducts(categoryId, keyword, offset, pageSize, imageUrl);
         long total = productMapper.countProducts(categoryId, keyword, imageUrl);
-        System.out.println("==================== " + products);
+       
         // 返回分页结果
         return new PageResult<>(products, total, pageNum, pageSize);
     }
@@ -59,6 +59,17 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Transactional
     public void createProduct(Product product) {
+        // 添加基础参数验证
+        if (product.getName() == null || product.getName().trim().isEmpty()) {
+            throw new IllegalArgumentException("商品名称不能为空");
+        }
+        if (product.getPrice() == null || product.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("商品价格必须大于0");
+        }
+        if (product.getStock() == null || product.getStock() < 0) {
+            throw new IllegalArgumentException("商品库存不能为负数");
+        }
+
         // 参数验证
         if (product.getCategoryId() == null || product.getCategoryId().trim().isEmpty()) {
             throw new IllegalArgumentException("分类不能为空");
@@ -115,12 +126,31 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Transactional
     public void updateProduct(Product product) {
+        // 参数校验
+        if (product.getProductId() == null || product.getProductId().trim().isEmpty()) {
+            throw new IllegalArgumentException("商品ID不能为空");
+        }
+
         // 校验商品是否存在
         Product existingProduct = productMapper.findById(product.getProductId());
         if (existingProduct == null) {
             throw new RuntimeException("商品不存在");
         }
-        // 更新修改时间和用户
+
+        // 校验商品状态
+        if (existingProduct.getIsActive() == 0) {
+            throw new RuntimeException("已下架商品不能更新");
+        }
+
+        // 价格和库存的合法性校验
+        if (product.getPrice() != null && product.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("商品价格必须大于0");
+        }
+        if (product.getStock() != null && product.getStock() < 0) {
+            throw new IllegalArgumentException("商品库存不能为负数");
+        }
+
+        // 更新修改时间
         product.setModifiedTime(LocalDateTime.now());
         productMapper.updateProduct(product);
     }
@@ -128,11 +158,25 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Transactional
     public void deactivateProduct(String productId) {
+        // 参数校验
+        if (productId == null || productId.trim().isEmpty()) {
+            throw new IllegalArgumentException("商品ID不能为空");
+        }
+
+        // 检查商品是否存在
         Product product = productMapper.findById(productId);
         if (product == null) {
             throw new RuntimeException("商品不存在");
         }
+
+        // 检查商品当前状态
+        if (product.getIsActive() == 0) {
+            throw new RuntimeException("商品已经处于下架状态");
+        }
+
+        // 设置下架状态和修改时间
         product.setIsActive(0);
+        product.setModifiedTime(LocalDateTime.now());
         productMapper.updateProduct(product);
     }
 
@@ -140,7 +184,7 @@ public class ProductServiceImpl implements ProductService {
     public PageResult<Product> searchProducts(String keyword, int page, int size) {
         // 计算分页偏移量
         int offset = (page - 1) * size;
-        System.out.println("==================== "+offset);
+        System.out.println("==================== " + offset);
         // 获取匹配的商品列表
         List<Product> products = productMapper.searchProducts(keyword, offset, size);
         System.out.println("==================== " + products);

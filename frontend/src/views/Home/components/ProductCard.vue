@@ -5,10 +5,9 @@
     @click="goToDetail"
   >
     <div class="product-image-wrapper">
-      <el-image
-        :src="`http://localhost:8088/products${product.imageUrl}`"
+      <img 
+        :src="productImage" 
         :alt="product.name"
-        fit="cover"
         class="product-image"
         @error="handleImageError"
       />
@@ -51,16 +50,36 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import type { Product } from '@/types/api/product';
-import errorImage from '@/assets/logo_w.png';
 
 const props = defineProps<{
   product: Product
 }>();
 
 const router = useRouter();
+
+const defaultImage = '/images/default-product.jpg';
+const imageLoadError = ref(false);
+const API_BASE_URL = 'http://localhost:8088/products'; // API基础路径
+
+// 使用计算属性缓存图片URL
+const productImage = computed(() => {
+  if (imageLoadError.value) return defaultImage;
+  return getImageUrl(props.product.imageUrl);
+});
+
+// 处理图片URL
+const getImageUrl = (url: string) => {
+  if (!url) return defaultImage;
+  // 如果是完整的URL，直接返回
+  if (url.startsWith('http')) return url;
+  // 处理路径，移除开头的斜杠和可能重复的 'images/'
+  const cleanPath = url.startsWith('/') ? url.slice(1) : url;
+  const imagePath = cleanPath.replace(/^images\//, '');
+  return `${API_BASE_URL}/images/${imagePath}`;
+};
 
 // 格式化价格
 const formatPrice = (price: number) => {
@@ -76,9 +95,9 @@ const goToDetail = () => {
   router.push(`/product/${props.product.productId}`);
 };
 
-const handleImageError = (e: Event) => {
-  const imgElement = e.target as HTMLImageElement;
-  imgElement.src = errorImage;
+// 处理图片加载错误
+const handleImageError = () => {
+  imageLoadError.value = true;
 };
 </script>
 

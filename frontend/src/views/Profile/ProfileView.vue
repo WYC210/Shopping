@@ -456,22 +456,24 @@ const passwordDialogVisible = ref(false);
 const fetchUserInfo = async () => {
   console.log('开始获取用户信息...');
   try {
-    // 使用正确的方法名 getProfile
     const response = await serviceRegistry.user.getProfile();
     console.log('获取到的用户信息:', response);
     
+    // 正确处理后端返回的数据
     userInfo.value = {
-      username: response.username || '未注册',
-      email: response.email || '未设置',
-      phone: response.phone || '未设置',
-      registeredAt: response.createdTime ? formatDate(response.createdTime) : '未注册'
+      username: response.data.username || '未注册',
+      email: response.data.email || '未设置',
+      phone: response.data.phone || '未设置',
+      registeredAt: response.data.createdTime ? formatDate(response.data.createdTime) : '未注册'
     };
+
     // 同时更新编辑表单的初始值
     editForm.value = {
-      username: response.username || '',
-      email: response.email || '',
-      phone: response.phone || ''
+      username: response.data.username || '',
+      email: response.data.email || '',
+      phone: response.data.phone || ''
     };
+
     console.log('用户信息更新成功:', userInfo.value);
   } catch (error) {
     console.error('获取用户信息失败:', error);
@@ -777,32 +779,55 @@ onMounted(() => {
   --el-pagination-hover-color: var(--el-color-primary);
 }
 
-/* 对话框样式 */
+/* 修改订单表格样式 */
+:deep(.el-table) {
+  background-color: transparent !important;
+}
+
+:deep(.el-table th),
+:deep(.el-table tr) {
+  background-color: rgba(0, 51, 102, 0.6) !important;
+  color: #ffffff !important;
+}
+
+:deep(.el-table td) {
+  background-color: rgba(0, 51, 102, 0.6) !important;
+  color: #ffffff !important;
+  border-bottom: 1px solid rgba(168, 216, 255, 0.1);
+}
+
+/* 修改对话框输入框样式 */
 :deep(.el-dialog) {
   background: rgba(0, 51, 102, 0.9) !important;
   border: 1px solid rgba(168, 216, 255, 0.2);
   box-shadow: 0 0 20px rgba(0, 149, 255, 0.3);
 }
 
-:deep(.el-dialog__title) {
-  color: #a8d8ff !important;
+:deep(.el-dialog .el-input__wrapper) {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  box-shadow: none !important;
 }
 
-:deep(.el-dialog__body) {
+:deep(.el-dialog .el-input__inner) {
+  background-color: transparent !important;
+  color: #ffffff !important;
+  height: 40px !important;
+}
+
+:deep(.el-dialog .el-input__inner::placeholder) {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* 确保对话框中的标签文字可见 */
+:deep(.el-dialog .el-form-item__label) {
   color: #ffffff !important;
 }
 
-:deep(.el-form-item__label) {
-  color: #a8d8ff !important;
-}
-
-:deep(.el-input__inner) {
-  
-  color: #ffffff !important;
-}
-
-:deep(.el-input__inner:focus) {
-  border-color: #00ffff !important;
+/* 修改对话框按钮样式 */
+:deep(.el-dialog .el-button) {
+  background: rgba(0, 149, 255, 0.2);
+  border: 1px solid rgba(0, 149, 255, 0.3);
+  color: #ffffff;
 }
 
 /* 修改钱包和历史记录卡片样式 */
@@ -831,7 +856,12 @@ onMounted(() => {
   background-color: transparent !important;
 }
 
-.wallet-transactions :deep(.el-table td) {
-  border-bottom: 1px solid rgba(168, 216, 255, 0.1);
+/* 确保对话框内容在最上层 */
+:deep(.el-dialog) {
+  z-index: 2000 !important;
+}
+
+:deep(.el-overlay) {
+  z-index: 1999 !important;
 }
 </style>

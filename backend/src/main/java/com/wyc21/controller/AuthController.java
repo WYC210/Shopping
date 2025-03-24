@@ -4,8 +4,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import com.wyc21.service.TokenService;
 import com.wyc21.util.JsonResult;
-import com.wyc21.entity.User; // 假设有一个 User 实体类
-import com.wyc21.service.IUserService; // 假设有一个 IUserService 处理用户逻辑
+import com.wyc21.entity.User; 
+import com.wyc21.service.IUserService; 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

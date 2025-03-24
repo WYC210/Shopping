@@ -1,4 +1,3 @@
-
 export interface UserProfile {
   id: string;
   username: string;
@@ -18,4 +17,11 @@ export interface LoginParams {
 export interface UpdatePasswordParams {
   oldPassword: string;
   newPassword: string;
+}
+
+export interface UserInfo {
+  userId: string;
+  username: string;
+  role: 'admin' | 'user';
+  // ... 其他字段
 }

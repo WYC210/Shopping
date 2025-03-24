@@ -56,20 +56,31 @@ const fetchProductDetail = async (): Promise<void> => {
     const response = await productService.getProductDetail(productId)
     
 
-    if (response.data) {
+    if (response.data && response.data.images.length>0) {
       product.value = {
         ...response.data.product,
-        images: response.data.images
+        images: response.data.images 
+        
       }
-    } else {
+    } else if (response.data && response.data.images.length == 0) {
+      product.value = {
+        ...response.data.product,
+        images: [errorImage]
+      }
+    }
+    else {
       throw new Error("获取商品详情失败")
     }
+  
+ 
+    
   } catch (error) {
     
     ElMessage.error(error instanceof Error ? error.message : "获取商品详情失败")
   } finally {
     loading.value = false
   }
+  
 }
 
 // 加入购物车
@@ -157,9 +168,14 @@ const handlePurchase = async () => {
 
 // 处理图片加载错误
 const handleImageError = (e: Event): void => {
-  if (product.value?.images) {
+  console.log(product.value?.images);
+  console.log(product.value?.imageUrl);
+  
+  
+  if (product.value?.images || product.value?.imageUrl) {
     product.value.images = [errorImage]
   }
+
 }
 
 // 返回商城主页
@@ -333,6 +349,7 @@ const averageRating = computed(() => {
                 v-for="(image, index) in product.images" 
                 :key="index"
                 :src="image"
+                
                 fit="cover"
                 class="product-image"
                 @error="handleImageError"
