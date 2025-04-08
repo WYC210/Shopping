@@ -5,12 +5,13 @@
 
     <div class="dashboard-container">
       <!-- 左侧导航栏 -->
-      <el-affix :offset="60">
-        <aside class="sidebar">
+      <el-affix :offset="60" >
+        <aside class="sidebar" style="background-color: rgba(0, 51, 102, 0.6);">
           <el-menu
             :default-active="activeMenu"
             class="profile-menu"
             :collapse="false"
+            style="background-color: rgba(0, 51, 102, 0.6);"
            
           >
             <el-menu-item index="overview" @click="switchTab('overview')" class="menu-item">
